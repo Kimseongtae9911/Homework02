@@ -136,12 +136,12 @@ public:
 
 protected:
 	BoundingOrientedBox m_xmOOBB = BoundingOrientedBox();
-	//XMFLOAT3 m_xmf3Center = XMFLOAT3(0.0f, 0.0f, 0.0f);
-	//XMFLOAT3 m_xmf3Extent = XMFLOAT3(0.0f, 0.0f, 0.0f);
-	float m_fVelocity = 0.0f;
+	bool m_bCollide = true;
 
 	static XMFLOAT3 m_xmf3Center;
 	static XMFLOAT3 m_xmf3Extent;
+
+	float m_fVelocity = 0.0f;
 
 public:
 	void SetMesh(CMesh* pMesh);
@@ -175,6 +175,7 @@ public:
 	const float GetVelocity() const { return m_fVelocity; }
 	const XMFLOAT3& GetCenter() const { return m_xmf3Center; }
 	XMFLOAT3 GetExtent() { return m_xmf3Extent; }
+	const bool GetCollide() const { return m_bCollide; }
 
 	void SetPosition(float x, float y, float z);
 	void SetPosition(XMFLOAT3 xmf3Position);
@@ -182,6 +183,7 @@ public:
 	void SetVelocity(float fVelocity) { m_fVelocity = fVelocity; }
 	void SetCenter(XMFLOAT3& xmf3Center) { m_xmf3Center = xmf3Center; }
 	void SetExtent(XMFLOAT3& xmf3Extent) { m_xmf3Extent = xmf3Extent; }
+	void SetCollide(bool bCollide) { m_bCollide = bCollide; }
 
 	void MoveStrafe(float fDistance = 1.0f);
 	void MoveUp(float fDistance = 1.0f);
@@ -197,10 +199,11 @@ public:
 
 	UINT GetMeshType() { return((m_pMesh) ? m_pMesh->GetType() : 0); }
 
-	const BoundingOrientedBox& GetOOBB() { return m_xmOOBB; }
+	BoundingOrientedBox& GetOOBB() { return m_xmOOBB; }
 	void SetOOBB(BoundingOrientedBox& OOBB) { m_xmOOBB = OOBB; }
 	void SetOOBB(const BoundingOrientedBox& OOBB) { m_xmOOBB = OOBB; }
 	void SetOOBB(XMFLOAT3& xmf3Center, XMFLOAT3& xmf3Extent, XMFLOAT4& xmf4Orientation) { m_xmOOBB = BoundingOrientedBox(xmf3Center, xmf3Extent, xmf4Orientation); }
+
 	void UpdateOOBB(XMFLOAT3& xmf3Center);
 	void UpdateOOBB(XMFLOAT3&& xmf3Center);
 

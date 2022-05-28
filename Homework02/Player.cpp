@@ -7,7 +7,6 @@
 #include "Shader.h"
 
 ///////////////////////////////////////////////////////////////////////////////////////////////////////////////////
-// CPlayer
 
 CPlayer::CPlayer()
 {
@@ -302,17 +301,20 @@ void CPlayer::Render(ID3D12GraphicsCommandList *pd3dCommandList, CCamera *pCamer
 }
 
 ///////////////////////////////////////////////////////////////////////////////////////////////////////////////////
-// CAirplanePlayer
 
 CAirplanePlayer::CAirplanePlayer(ID3D12Device *pd3dDevice, ID3D12GraphicsCommandList *pd3dCommandList, ID3D12RootSignature *pd3dGraphicsRootSignature)
 {
+#define SCALE_VALUE 8.5f
 	m_pCamera = ChangeCamera(/*SPACESHIP_CAMERA*/THIRD_PERSON_CAMERA, 0.0f);
 
 	CGameObject *pGameObject = CGameObject::LoadGeometryFromFile(pd3dDevice, pd3dCommandList, pd3dGraphicsRootSignature, "Model/OldCar.bin");
+	pGameObject->SetOOBB(BoundingOrientedBox(pGameObject->GetCenter(), pGameObject->GetExtent(), XMFLOAT4(0.0f, 0.0f, 0.0f, 1.0f)));
 
-	pGameObject->Rotate(15.0f, 0.0f, 0.0f);
-	pGameObject->SetScale(8.5f, 8.5f, 8.5f);
+	pGameObject->SetScale(SCALE_VALUE, SCALE_VALUE, SCALE_VALUE);
+	pGameObject->GetOOBB().Extents.x *= SCALE_VALUE; pGameObject->GetOOBB().Extents.y *= SCALE_VALUE; pGameObject->GetOOBB().Extents.z *= SCALE_VALUE;
 	SetChild(pGameObject, true);
+	this->SetOOBB(pGameObject->GetOOBB());
+	this->SetCollide(false);
 
 	OnInitialize();
 

@@ -614,15 +614,20 @@ void CGameObject::PrintFrameInfo(CGameObject *pGameObject, CGameObject *pParent)
 void CGameObject::UpdateOOBB(XMFLOAT3& xmf3Center)
 {
 	m_xmOOBB.Center = xmf3Center;
+	CGameObject::m_xmf3Center = xmf3Center;
 }
 
 void CGameObject::UpdateOOBB(XMFLOAT3&& xmf3Center)
 {
 	m_xmOOBB.Center = xmf3Center;
+	CGameObject::m_xmf3Center = xmf3Center;
 }
 
 CGameObject *CGameObject::LoadGeometryFromFile(ID3D12Device *pd3dDevice, ID3D12GraphicsCommandList *pd3dCommandList, ID3D12RootSignature *pd3dGraphicsRootSignature, const char *pstrFileName)
 {
+	CGameObject::m_xmf3Center = XMFLOAT3();
+	CGameObject::m_xmf3Extent = XMFLOAT3();
+
 	FILE *pInFile = NULL;
 	::fopen_s(&pInFile, pstrFileName, "rb");
 	::rewind(pInFile);
@@ -814,8 +819,6 @@ CCarObject::CCarObject()
 		break;
 	}
 	SetScale(7.0f, 7.0f, 7.0f);
-
-	//m_xmOOBB = BoundingOrientedBox(GetPosition(), XMFLOAT3(1.0f, 1.0f, 1.0f), XMFLOAT4(0.0f, 0.0f, 0.0f, 1.0f));
 }
 
 CCarObject::~CCarObject()
@@ -844,6 +847,7 @@ void CCarObject::Animate(float fTimeElapsed, XMFLOAT4X4* pxmf4x4Parent)
 			SetPosition(LEFTROAD, 0.0f, 1340.0f);
 			break;
 		}
+		m_bCollide = true;
 	}
 	else
 		SetPosition(xmf3pos);

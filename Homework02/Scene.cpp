@@ -77,21 +77,29 @@ void CScene::BuildObjects(ID3D12Device *pd3dDevice, ID3D12GraphicsCommandList *p
 	m_ppGameObjects = new CGameObject*[m_nGameObjects];
 
 	CGameObject *pPoliceCarModel = CGameObject::LoadGeometryFromFile(pd3dDevice, pd3dCommandList, m_pd3dGraphicsRootSignature, "Model/PoliceCar.bin");
-	//pPoliceCarModel->SetOOBB(pPoliceCarModel->GetCenter(), pPoliceCarModel->GetExtent(), XMFLOAT4(0.0f, 0.0f, 0.0f, 1.0f));
-	std::cout << "===============================" << std::endl << std::endl;
+	pPoliceCarModel->SetOOBB(BoundingOrientedBox(pPoliceCarModel->GetCenter(), pPoliceCarModel->GetExtent(), XMFLOAT4(0.0f, 0.0f, 0.0f, 1.0f)));
 	CGameObject* pOldCarModel = CGameObject::LoadGeometryFromFile(pd3dDevice, pd3dCommandList, m_pd3dGraphicsRootSignature, "Model/OldCar.bin");
-	std::cout << "===============================" << std::endl << std::endl;
+	pOldCarModel->SetOOBB(BoundingOrientedBox(pOldCarModel->GetCenter(), pOldCarModel->GetExtent(), XMFLOAT4(0.0f, 0.0f, 0.0f, 1.0f)));
+
 	CCarObject* pCarObject = NULL;
 	float fScale = 7.0f;
 
 	for (int i = 0; i < m_nGameObjects; ++i) {
 		pCarObject = new CCarObject();
-		if(i % 2 == 0)
+		if (i % 2 == 0) {
 			pCarObject->SetChild(pPoliceCarModel, true);
-		else 
+			pCarObject->OnInitialize();
+			m_ppGameObjects[i] = pCarObject;
+			m_ppGameObjects[i]->SetOOBB(pPoliceCarModel->GetOOBB());
+		}
+		else {
 			pCarObject->SetChild(pOldCarModel, true);
-		pCarObject->OnInitialize();
-		m_ppGameObjects[i] = pCarObject;
+			pCarObject->OnInitialize();
+			m_ppGameObjects[i] = pCarObject;
+			m_ppGameObjects[i]->SetOOBB(pOldCarModel->GetOOBB());
+		}
+		m_ppGameObjects[i]->GetOOBB().Extents.x *= fScale; m_ppGameObjects[i]->GetOOBB().Extents.y *= fScale; m_ppGameObjects[i]->GetOOBB().Extents.z *= fScale;
+		m_ppGameObjects[i]->UpdateOOBB(m_ppGameObjects[i]->GetPosition());
 	}
 
 	m_nMapObjects = 20;
@@ -117,12 +125,6 @@ void CScene::BuildObjects(ID3D12Device *pd3dDevice, ID3D12GraphicsCommandList *p
 		pTreeObject->SetScale(10.0f, 10.0f, 10.0f);
 		m_ppGameMap[i] = pTreeObject;
 	}
-
-	//m_ppGameMap[0]->UpdateOOBB(m_ppGameMap[0]->GetPosition());
-	//m_ppGameMap[1]->UpdateOOBB(m_ppGameMap[1]->GetPosition());
-
-	//std::cout << m_ppGameMap[0]->GetOOBB().Center.z + m_ppGameMap[0]->GetOOBB().Extents.z << std::endl;
-	//std::cout << m_ppGameMap[1]->GetOOBB().Center.z + m_ppGameMap[1]->GetOOBB().Extents.z << std::endl;
 
 	CreateShaderVariables(pd3dDevice, pd3dCommandList);
 }
@@ -261,12 +263,9 @@ void CScene::CheckCollisionPlayerCar()
 {
 	for (int i = 0; i < m_nGameObjects; ++i) {
 		if (m_ppGameObjects[i]) {
-			if (m_pPlayer->GetOOBB().Intersects(m_ppGameObjects[i]->GetOOBB())) {
-				//std::cout << "Center : (" << m_pPlayer->GetOOBB().Center.x << ", " << m_pPlayer->GetOOBB().Center.y << ", " << m_pPlayer->GetOOBB().Center.z << ")" << std::endl;
-				//std::cout << "Extent : (" << m_pPlayer->GetOOBB().Extents.x << ", " << m_pPlayer->GetOOBB().Extents.y << ", " << m_pPlayer->GetOOBB().Extents.z << ")" << std::endl;
-				//std::cout << "===============================================================================" << std::endl;
-				//std::cout << "Center : (" << m_ppGameObjects[i]->GetOOBB().Center.x << ", " << m_ppGameObjects[i]->GetOOBB().Center.y << ", " << m_ppGameObjects[i]->GetOOBB().Center.z << ")" << std::endl;
-				//std::cout << "Extent : (" << m_ppGameObjects[i]->GetOOBB().Extents.x << ", " << m_ppGameObjects[i]->GetOOBB().Extents.y << ", " << m_ppGameObjects[i]->GetOOBB().Extents.z << ")" << std::endl;
+			if (m_pPlayer->GetOOBB().Intersects(m_ppGameObjects[i]->GetOOBB()) && m_ppGameObjects[i]->GetCollide()) {				
+				m_ppGameObjects[i]->SetCollide(false);
+				m_pPlayer->SetCollide(true);
 			}
 		}
 	}
