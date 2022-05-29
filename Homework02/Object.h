@@ -129,11 +129,13 @@ public:
 
 	XMFLOAT4X4						m_xmf4x4Transform;
 	XMFLOAT4X4						m_xmf4x4World;
+	XMFLOAT4X4 m_xmf4x4ResetWorld;
+	XMFLOAT4X4 m_xmf4x4ResetTransform;
 
 	CGameObject* m_pParent = NULL;
 	CGameObject* m_pChild = NULL;
 	CGameObject* m_pSibling = NULL;
-
+	
 protected:
 	BoundingOrientedBox m_xmOOBB = BoundingOrientedBox();
 	bool m_bCollide = true;
@@ -144,6 +146,9 @@ protected:
 	bool m_bShow = false;
 
 	float m_fVelocity = 0.0f;
+	float m_fPrevVelocity = 0.0f;
+	bool m_bBoost = false;
+	int m_nBoostCollide = 0;
 
 	float m_fScaleVal = 10.0f;
 
@@ -179,23 +184,29 @@ public:
 	XMFLOAT3 GetLook();
 	XMFLOAT3 GetUp();
 	XMFLOAT3 GetRight();
-	const float GetVelocity() const { return m_fVelocity; }
+	float GetVelocity() const { return m_fVelocity; }
+	float GetPrevVelocity() const { return m_fPrevVelocity; }
 	const XMFLOAT3& GetCenter() const { return m_xmf3Center; }
 	XMFLOAT3 GetExtent() { return m_xmf3Extent; }
 	const bool GetCollide() const { return m_bCollide; }
 	float GetScaleVal() const { return m_fScaleVal; }
 	bool GetShow() const { return m_bShow; }
+	bool GetBoost() const { return m_bBoost; }
+	bool GetBoostCollide() const { return m_nBoostCollide; }
 
 public:
 	void SetPosition(float x, float y, float z);
 	void SetPosition(XMFLOAT3 xmf3Position);
 	void SetScale(float x, float y, float z);
 	void SetVelocity(float fVelocity) { m_fVelocity = fVelocity; }
+	void SetPrevVelocity(float fPrevVelocity) { m_fPrevVelocity = fPrevVelocity; }
 	void SetCenter(XMFLOAT3& xmf3Center) { m_xmf3Center = xmf3Center; }
 	void SetExtent(XMFLOAT3& xmf3Extent) { m_xmf3Extent = xmf3Extent; }
 	void SetCollide(bool bCollide) { m_bCollide = bCollide; }
 	void SetShow(bool bShow) { m_bShow = bShow; }
-	
+	void SetBoost(bool bBoost) { m_bBoost = bBoost; }
+	void SetBoostCollde(int nBoostCollide) { m_nBoostCollide = nBoostCollide; }
+
 public:
 	void MoveStrafe(float fDistance = 1.0f);
 	void MoveUp(float fDistance = 1.0f);
@@ -212,6 +223,7 @@ public:
 	UINT GetMeshType() { return((m_pMesh) ? m_pMesh->GetType() : 0); }
 
 	void ResetSpawnTime() { m_llSpawnTime = ::GetTickCount64(); }
+	void ResetWorldMatrix();
 
 public:
 	BoundingOrientedBox& GetOOBB() { return m_xmOOBB; }
@@ -292,6 +304,9 @@ public:
 	virtual ~CCarObject();
 
 	virtual void Animate(float fTimeElapsed, XMFLOAT4X4* pxmf4x4Parent = NULL);
+
+private:	
+	void ResetPosSpeed();
 };
 
 class CItemObject : public CGameObject

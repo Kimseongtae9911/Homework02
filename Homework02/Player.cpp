@@ -381,7 +381,7 @@ void CPlayer::Render(ID3D12GraphicsCommandList *pd3dCommandList, CCamera *pCamer
 			if ((time - m_llSpawnTime) % 300 >= 0 && (time - m_llSpawnTime) % 300 <= 150) {
 				CGameObject::Render(pd3dCommandList, pCamera);
 			}
-			if ((time - m_llSpawnTime) >= 3000) {
+			if ((time - m_llSpawnTime) >= m_nInvincibleTime) {
 				m_bInvincible = false;
 				m_llSpawnTime = 0;
 			}

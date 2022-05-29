@@ -320,6 +320,11 @@ void CGameObject::Rotate(XMFLOAT4 *pxmf4Quaternion)
 	UpdateTransform(NULL);
 }
 
+void CGameObject::ResetWorldMatrix()
+{
+	m_xmf4x4World = m_xmf4x4ResetWorld;
+	m_xmf4x4Transform = m_xmf4x4ResetTransform;
+}
 ////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
 
 int ReadIntegerFromFile(FILE* pInFile)
@@ -684,7 +689,7 @@ void CRevolvingObject::Animate(float fTimeElapsed, XMFLOAT4X4 *pxmf4x4Parent)
 
 CMapObject::CMapObject()
 {
-	m_fVelocity = 1.0f;
+	m_fVelocity = 1.5f;
 }
 
 CMapObject::~CMapObject()
@@ -735,6 +740,9 @@ CCarObject::CCarObject()
 		break;
 	}
 	SetScale(m_fScaleVal, m_fScaleVal, m_fScaleVal);
+
+	m_xmf4x4ResetWorld = m_xmf4x4World;
+	m_xmf4x4ResetTransform = m_xmf4x4Transform;
 }
 
 CCarObject::~CCarObject()
@@ -745,33 +753,76 @@ CCarObject::~CCarObject()
 void CCarObject::Animate(float fTimeElapsed, XMFLOAT4X4* pxmf4x4Parent)
 {
 	XMFLOAT3 xmf3pos = GetPosition();
-	xmf3pos.z -= m_fVelocity;
-	if (m_fVelocity < m_fMaxSpeed)
-		m_fVelocity += GAIN_SPEED;
-
-	if (xmf3pos.z <= -170.0f) {
-		int pos = uidi(engine);
-		m_fVelocity = (float)uidr(engine);
-		switch (pos) {
-		case 0:
-			SetPosition(RIGHTROAD, 0.0f, 1340.0f);
+	if (m_bBoost && !m_bCollide) {
+		switch (m_nBoostCollide) {
+		case 0:		// 플레이어가 왼쪽
+			xmf3pos.z += 2.0f;
+			xmf3pos.y += 1.0f;
+			xmf3pos.x += 2.0f;
+			Rotate(5.0f, 3.0f, 5.0f);
+			if (xmf3pos.x > 300.0f) {
+				ResetPosSpeed();
+				ResetWorldMatrix();
+			}
 			break;
-		case 1:
-			SetPosition(MIDDLEROAD, 0.0f, 1340.0f);
+		case 1:		// 플레이어가 오른쪽
+			xmf3pos.z += 2.0f;
+			xmf3pos.y += 1.0f;
+			xmf3pos.x -= 2.0f;
+			Rotate(5.0f, 3.0f, 5.0f);
+			if (xmf3pos.x > 300.0f) {
+				ResetPosSpeed();
+				ResetWorldMatrix();
+			}
 			break;
-		case 2:
-			SetPosition(LEFTROAD, 0.0f, 1340.0f);
+		case 2:		// 플레이어와 같은 위치
+			xmf3pos.z += 2.0f;
+			xmf3pos.y += 2.0f;
+			Rotate(5.0f, 0.0f, 0.0f);
+			if (xmf3pos.y > 300.0f) {
+				ResetPosSpeed();
+				ResetWorldMatrix();
+			}
 			break;
 		}
-		m_bCollide = true;
-	}
-	else
 		SetPosition(xmf3pos);
+	}
+	else {
+		if (!IsEqual(m_xmf4x4World._11, m_xmf4x4ResetWorld._11)) {
+			ResetWorldMatrix();
+			ResetPosSpeed();
+		}
+		xmf3pos.z -= m_fVelocity;
+		if (m_fVelocity < m_fMaxSpeed)
+			m_fVelocity += GAIN_SPEED;
 
+		if (xmf3pos.z <= -170.0f)
+			ResetPosSpeed();
+		else
+			SetPosition(xmf3pos);
+	}
 	UpdateOOBB(GetPosition());
 	CGameObject::Animate(fTimeElapsed, pxmf4x4Parent);
 }
 
+void CCarObject::ResetPosSpeed()
+{
+	int pos = uidi(engine);
+	m_fVelocity = (float)uidr(engine);
+	if (m_bBoost) m_fVelocity += 7.0f;
+	switch (pos) {
+	case 0:
+		SetPosition(RIGHTROAD, 0.0f, 1340.0f);
+		break;
+	case 1:
+		SetPosition(MIDDLEROAD, 0.0f, 1340.0f);
+		break;
+	case 2:
+		SetPosition(LEFTROAD, 0.0f, 1340.0f);
+		break;
+	}
+	m_bCollide = true;
+}
 ////////////////////////////////////////////////////////////////////////////////////////////////////
 
 std::uniform_int_distribution<> uidcoin(5, 10);

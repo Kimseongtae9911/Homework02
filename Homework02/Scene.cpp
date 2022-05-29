@@ -80,7 +80,6 @@ void CScene::BuildObjects(ID3D12Device *pd3dDevice, ID3D12GraphicsCommandList *p
 	m_ppGameObjects = new CGameObject*[m_nGameObjects];
 
 	CGameObject *pPoliceCarModel = CGameObject::LoadGeometryFromFile(pd3dDevice, pd3dCommandList, m_pd3dGraphicsRootSignature, "Model/car_1203_blue.bin");
-	//CGameObject* pPoliceCarModel = CGameObject::LoadGeometryFromFile(pd3dDevice, pd3dCommandList, m_pd3dGraphicsRootSignature, "Model/PirateCoin_(Brass).bin");
 	pPoliceCarModel->SetOOBB(BoundingOrientedBox(pPoliceCarModel->GetCenter(), pPoliceCarModel->GetExtent(), XMFLOAT4(0.0f, 0.0f, 0.0f, 1.0f)));
 	CGameObject* pOldCarModel = CGameObject::LoadGeometryFromFile(pd3dDevice, pd3dCommandList, m_pd3dGraphicsRootSignature, "Model/car_1203_yellow.bin");
 	pOldCarModel->SetOOBB(BoundingOrientedBox(pOldCarModel->GetCenter(), pOldCarModel->GetExtent(), XMFLOAT4(0.0f, 0.0f, 0.0f, 1.0f)));
@@ -128,7 +127,7 @@ void CScene::BuildObjects(ID3D12Device *pd3dDevice, ID3D12GraphicsCommandList *p
 	}
 
 	m_nCoinObjects = 20;
-	m_nItemObjects = 25;
+	m_nItemObjects = 24;
 	m_ppItemObjects = new CGameObject * [m_nItemObjects];
 
 	CGameObject* pCoinModel = CGameObject::LoadGeometryFromFile(pd3dDevice, pd3dCommandList, m_pd3dGraphicsRootSignature, "Model/PirateCoin_(Brass).bin");
@@ -264,10 +263,175 @@ void CScene::ReleaseUploadBuffers()
 		m_ppGameMap[i]->ReleaseUploadBuffers();
 }
 
+bool CScene::OnProcessingMouseMessage(HWND hWnd, UINT nMessageID, WPARAM wParam, LPARAM lParam)
+{
+	return(false);
+}
+
+bool CScene::OnProcessingKeyboardMessage(HWND hWnd, UINT nMessageID, WPARAM wParam, LPARAM lParam)
+{
+	switch (nMessageID)
+	{
+	case WM_KEYDOWN:
+		switch (wParam)
+		{
+		case 'S': 
+			if (m_pPlayer->GetCoinCnt() >= 5 && !m_ppItemObjects[m_nCoinObjects]->GetShow())
+				CreateShield();
+			break;
+		case 'A':
+			if (m_pPlayer->GetCoinCnt() >= 10)
+				PlayerInvincible();
+			break;
+		case 'D':
+			if (m_pPlayer->GetCoinCnt() >= 20)
+				PlayerBoost();
+			break;
+		case VK_RETURN:
+			m_bGameStart = true;
+			break;
+		case VK_SPACE:
+			if (!m_pPlayer->GetJumping())
+				m_pPlayer->SetJumping(true);
+			break;
+		default:
+			break;
+		}
+		break;
+	default:
+		break;
+	}
+	return(false);
+}
+
+bool CScene::ProcessInput(UCHAR *pKeysBuffer)
+{
+	return(false);
+}
+
+void CScene::AnimateObjects(float fTimeElapsed)
+{
+	m_fElapsedTime = fTimeElapsed;
+
+	if (m_bGameStart && !m_pPlayer->GetCollide()) {
+		for (int i = 0; i < m_nGameObjects; ++i)
+			m_ppGameObjects[i]->Animate(fTimeElapsed, NULL);
+		for (int i = 0; i < m_nMapObjects; ++i)
+			m_ppGameMap[i]->Animate(fTimeElapsed, NULL);
+		for (int i = 0; i < m_nItemObjects; ++i)					//nCoinObjects까지만 해도됨
+			m_ppItemObjects[i]->Animate(fTimeElapsed, NULL);
+
+		XMFLOAT3 xmf3pos = m_pPlayer->GetPosition();
+		xmf3pos.y += 13.0f;
+		m_ppItemObjects[m_nCoinObjects]->SetPosition(xmf3pos.x, xmf3pos.y, m_ppItemObjects[m_nCoinObjects]->GetPosition().z);
+	}
+
+	for (int i = m_nCoinObjects + 1; i < m_nItemObjects; ++i) {		// nCoinObjects + 1부터 목숨개수까지
+		m_ppItemObjects[i]->SetPosition(m_pPlayer->GetPosition().x + 63.0f - ((i - m_nCoinObjects - 1) * 9.0f),
+			m_pPlayer->GetPosition().y + 93.0f, -70.0f);
+	}
+
+	// 플레이어 부스터 끝날 때 처리
+	if (m_pPlayer->GetBoost()) {
+		long long time = ::GetTickCount64();
+		if (time - m_llBoostTime >= 3000) {
+			m_pPlayer->SetInvincible(true);
+			m_pPlayer->SetInvincibleTime(1500);
+			m_pPlayer->ResetSpawnTime();
+			m_pPlayer->SetBoost(false);
+			m_llBoostTime = 0;
+			m_xmf4GlobalAmbient = XMFLOAT4(0.3f, 0.3f, 0.3f, 1.0f);
+			for (int i = 0; i < m_nGameObjects; ++i) {
+				m_ppGameObjects[i]->SetVelocity(m_ppGameObjects[i]->GetPrevVelocity());
+				m_ppGameObjects[i]->SetBoost(false);
+				m_ppGameObjects[i]->ResetWorldMatrix();
+			}
+			for (int i = 0; i < m_nMapObjects; ++i) {
+				m_ppGameMap[i]->SetVelocity(m_ppGameMap[i]->GetPrevVelocity());
+			}
+		}
+		else if ((time - m_llBoostTime) % 100 >= 0 && (time - m_llBoostTime) % 100 <= 50) {
+			m_xmf4GlobalAmbient.x = 0.6f;
+		}
+		else {
+			m_xmf4GlobalAmbient.x = 0.3f;
+		}
+	}
+
+	// Player 충돌 애니메이션
+	if (m_pPlayer->GetCollide()) {
+		m_pPlayer->PlayerJump();
+		CollideAnimate();			// 모든 오브젝트에 공통으로 적용되는 애니메이션
+	}
+	
+	LightAnimate();
+	CheckCollisionPlayerCar();		// 충돌처리
+}
+
 extern random_device rd;
 extern mt19937 engine;
 extern uniform_int_distribution<> uidi;
 std::uniform_real_distribution<> uid(0.2f, 1.0f);
+void CScene::CheckCollisionPlayerCar()
+{
+	// 차량 오브젝트와 충돌 + 쉴드
+	for (int i = 0; i < m_nGameObjects; ++i) {
+		if (m_ppGameObjects[i] && !m_pPlayer->GetInvincible()) {
+			if (m_pPlayer->GetOOBB().Intersects(m_ppGameObjects[i]->GetOOBB()) && m_ppGameObjects[i]->GetCollide()) {
+				if (m_ppItemObjects[m_nCoinObjects]->GetShow()) {
+					m_ppItemObjects[m_nCoinObjects]->SetShow(false);
+					m_ppGameObjects[i]->SetPosition(XMFLOAT3(0.0f, 0.0f, -180.0f));
+				}
+				else {	//쉴드 없을 때
+					if (m_pPlayer->GetBoost()) {	//부스터 발동중
+						m_ppGameObjects[i]->SetCollide(false);
+						if (IsEqual(m_pPlayer->GetPosition().x, m_ppGameObjects[i]->GetPosition().x)) {
+							m_ppGameObjects[i]->SetBoostCollde(2);	//플레이어와 같은 위치
+						}
+						else if (m_pPlayer->GetPosition().x < m_ppGameObjects[i]->GetPosition().x) {
+							m_ppGameObjects[i]->SetBoostCollde(1);	//플레이어가 왼쪽
+						}
+						else {
+							m_ppGameObjects[i]->SetBoostCollde(0);	//플레이어가 오른쪽
+						}
+					}
+					else {
+						m_pPlayer->SetInvincible(true);
+						m_pPlayer->SetInvincibleTime(3000);
+						m_ppGameObjects[i]->SetCollide(false);
+						if (!m_pPlayer->GetCollide())
+							m_nAnimate = uidi(engine);
+						m_pPlayer->SetCollide(true);
+						SpeedDown();
+						for (int i = m_nItemObjects - 1; i >= m_nCoinObjects + 1; --i) {
+							if (m_ppItemObjects[i]->GetShow()) {
+								m_ppItemObjects[i]->SetShow(false);
+								if (i == m_nCoinObjects + 1)
+									std::cout << "Game Over" << std::endl;
+								break;
+							}
+						}
+						m_ppGameObjects[i]->SetCollide(true);
+					}
+				}
+			}
+		}
+	}
+
+	// 코인 오브젝트과 충돌
+	for (int i = 0; i < m_nCoinObjects; ++i) {
+		if (m_ppItemObjects[i] && m_ppItemObjects[i]->GetShow()) {
+			if (m_pPlayer->GetOOBB().Intersects(m_ppItemObjects[i]->GetOOBB())) {
+				m_ppItemObjects[i]->SetShow(false);
+				m_ppItemObjects[i]->ResetSpawnTime();
+				m_ppItemObjects[i]->SetCollide(true);
+				m_pPlayer->AddCoinCnt();
+				SetLightColor();
+			}
+		}
+	}
+}
+
 void CScene::SpeedDown()
 {
 	float fVelocity;
@@ -320,152 +484,6 @@ void CScene::CollideAnimate()
 	}
 	m_pPlayer->PlayerCollideAnimate(m_nAnimate);
 
-}
-
-bool CScene::OnProcessingMouseMessage(HWND hWnd, UINT nMessageID, WPARAM wParam, LPARAM lParam)
-{
-	return(false);
-}
-
-bool CScene::OnProcessingKeyboardMessage(HWND hWnd, UINT nMessageID, WPARAM wParam, LPARAM lParam)
-{
-	switch (nMessageID)
-	{
-	case WM_KEYDOWN:
-		switch (wParam)
-		{
-		case 'S': 
-			if (m_pPlayer->GetCoinCnt() >= 5 && !m_ppItemObjects[m_nCoinObjects]->GetShow())
-				CreateShield();
-			break;
-		case 'A':
-			if (m_pPlayer->GetCoinCnt() >= 10)
-				PlayerInvincible();
-			break;
-		case 'D':
-			if (m_pPlayer->GetCoinCnt() >= 10)
-				PlayerBoost();
-			break;
-		case VK_RETURN:
-			m_bGameStart = true;
-			break;
-		case VK_SPACE:
-			if (!m_pPlayer->GetJumping())
-				m_pPlayer->SetJumping(true);
-			break;
-		default:
-			break;
-		}
-		break;
-	default:
-		break;
-	}
-	return(false);
-}
-
-void CScene::CheckCollisionPlayerCar()
-{
-	// 차량 오브젝트와 충돌 + 쉴드
-	for (int i = 0; i < m_nGameObjects; ++i) {
-		if (m_ppGameObjects[i] && !m_pPlayer->GetInvincible()) {
-			if (m_pPlayer->GetOOBB().Intersects(m_ppGameObjects[i]->GetOOBB()) && m_ppGameObjects[i]->GetCollide()) {	
-				if (m_ppItemObjects[m_nCoinObjects]->GetShow()) {
-					m_ppItemObjects[m_nCoinObjects]->SetShow(false);
-					m_ppGameObjects[i]->SetPosition(XMFLOAT3(0.0f, 0.0f, -180.0f));
-				}
-				else {
-					m_pPlayer->SetInvincible(true);
-					m_ppGameObjects[i]->SetCollide(false);
-					if (!m_pPlayer->GetCollide())
-						m_nAnimate = uidi(engine);
-					m_pPlayer->SetCollide(true);
-					SpeedDown();
-					for (int i = m_nCoinObjects + 3; i >= m_nCoinObjects + 1; --i) {
-						if (m_ppItemObjects[i]->GetShow()) {
-							m_ppItemObjects[i]->SetShow(false);
-							if (i == m_nCoinObjects + 1)
-								std::cout << "Game Over" << std::endl;
-							break;
-						}
-					}
-					m_ppGameObjects[i]->SetCollide(true);
-				}
-			}
-		}
-	}
-
-	// 코인 오브젝트과 충돌
-	for (int i = 0; i < m_nCoinObjects; ++i) {
-		if (m_ppItemObjects[i] && m_ppItemObjects[i]->GetShow()) {
-			if (m_pPlayer->GetOOBB().Intersects(m_ppItemObjects[i]->GetOOBB())) {
-				m_ppItemObjects[i]->SetShow(false);
-				m_ppItemObjects[i]->ResetSpawnTime();
-				m_ppItemObjects[i]->SetCollide(true);
-				m_pPlayer->AddCoinCnt();		
-				SetLightColor();
-			}
-		}
-	}
-}
-
-bool CScene::ProcessInput(UCHAR *pKeysBuffer)
-{
-	return(false);
-}
-
-void CScene::AnimateObjects(float fTimeElapsed)
-{
-	m_fElapsedTime = fTimeElapsed;
-
-	if (m_bGameStart && !m_pPlayer->GetCollide()) {
-		for (int i = 0; i < m_nGameObjects; ++i)
-			m_ppGameObjects[i]->Animate(fTimeElapsed, NULL);
-		for (int i = 0; i < m_nMapObjects; ++i)
-			m_ppGameMap[i]->Animate(fTimeElapsed, NULL);
-		for (int i = 0; i < m_nItemObjects; ++i)					//nCoinObjects까지만 해도됨
-			m_ppItemObjects[i]->Animate(fTimeElapsed, NULL);
-
-		XMFLOAT3 xmf3pos = m_pPlayer->GetPosition();
-		xmf3pos.y += 13.0f;
-		m_ppItemObjects[m_nCoinObjects]->SetPosition(xmf3pos.x, xmf3pos.y, m_ppItemObjects[m_nCoinObjects]->GetPosition().z);
-	}
-
-	for (int i = m_nCoinObjects + 1; i < m_nCoinObjects + 4; ++i) {		// nCoinObjects + 1부터 목숨개수까지
-		m_ppItemObjects[i]->SetPosition(m_pPlayer->GetPosition().x + 63.0f - ((i - m_nCoinObjects - 1) * 9.0f),
-			m_pPlayer->GetPosition().y + 93.0f, -70.0f);
-	}
-
-	if (m_pPlayer->GetCollide()) {
-		m_pPlayer->PlayerJump();
-		CollideAnimate();
-	}
-
-	if (m_pLights)
-	{
-		m_pLights[1].m_xmf3Position = m_pPlayer->GetPosition();
-		m_pLights[1].m_xmf3Direction = m_pPlayer->GetLookVector();
-		m_pLights[3].m_xmf3Position.x = m_pPlayer->GetPosition().x;
-
-		// 무적일때 흰색 빛
-		if (m_pLights[0].m_bEnable && m_pPlayer->GetInvincible()) {
-			m_pLights[0].m_xmf3Position.x = m_pPlayer->GetPosition().x;
-			m_pLights[0].m_xmf3Position.y += m_nInvincibleLightDir * 5.0f;
-			if (m_pLights[0].m_xmf3Position.y > 150.0f)
-				m_nInvincibleLightDir = -1;
-			if (m_pLights[0].m_xmf3Position.y < 30.0f) {
-				m_nInvincibleLightDir = 1;
-				++m_nInvincibleCnt;
-			}
-			if (m_nInvincibleCnt == 7) {
-				m_pPlayer->SetInvincible(false);
-				m_nInvincibleCnt = 0;
-				m_pLights[0].m_bEnable = false;
-				m_pLights[0].m_xmf3Position.y = 60.0f;
-			}
-		}
-	}
-
-	CheckCollisionPlayerCar();
 }
 
 void CScene::Render(ID3D12GraphicsCommandList *pd3dCommandList, CCamera *pCamera)
@@ -558,5 +576,46 @@ void CScene::PlayerInvincible()
 void CScene::PlayerBoost()
 {
 	m_pPlayer->SetCointCnt(m_pPlayer->GetCoinCnt() - 20);
+	m_pPlayer->SetBoost(true);
+	m_llBoostTime = ::GetTickCount64();
+	for (int i = 0; i < m_nGameObjects; ++i) {
+		m_ppGameObjects[i]->SetPrevVelocity(m_ppGameObjects[i]->GetVelocity());
+		m_ppGameObjects[i]->SetVelocity(m_ppGameObjects[i]->GetVelocity() + 6.0f);
+		m_ppGameObjects[i]->SetBoost(true);
+	}
+	for (int i = 0; i < m_nMapObjects; ++i) {
+		m_ppGameMap[i]->SetPrevVelocity(m_ppGameMap[i]->GetVelocity());
+		m_ppGameMap[i]->SetVelocity(m_ppGameMap[i]->GetVelocity() + 2.0f);
+	}
+
 	SetLightColor();
+}
+
+void CScene::LightAnimate()
+{
+	if (m_pLights)
+	{
+		m_pLights[1].m_xmf3Position = m_pPlayer->GetPosition();
+		m_pLights[1].m_xmf3Direction = m_pPlayer->GetLookVector();
+		m_pLights[3].m_xmf3Position.x = m_pPlayer->GetPosition().x;
+
+		// 무적일때 흰색 빛
+		if (m_pLights[0].m_bEnable && m_pPlayer->GetInvincible()) {
+			m_pLights[0].m_xmf3Position.x = m_pPlayer->GetPosition().x;
+			m_pLights[0].m_xmf3Position.y += m_nInvincibleLightDir * 5.0f;
+			if (m_pLights[0].m_xmf3Position.y > 150.0f)
+				m_nInvincibleLightDir = -1;
+			if (m_pLights[0].m_xmf3Position.y < 30.0f) {
+				m_nInvincibleLightDir = 1;
+				++m_nInvincibleCnt;
+			}
+			if (m_nInvincibleCnt == 7) {
+				m_pPlayer->SetInvincibleTime(1500);
+				m_pPlayer->ResetSpawnTime();
+				m_nInvincibleCnt = 0;
+				m_pLights[0].m_bEnable = false;
+				m_pLights[0].m_xmf3Position.y = 60.0f;
+			}
+		}
+	}
 }

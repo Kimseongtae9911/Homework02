@@ -25,7 +25,8 @@ protected:
 	bool m_bPlayOnce = false;
 
 	bool m_bInvincible = false;
-	
+	int m_nInvincibleTime = 3000;
+
 	int m_nCoinCnt = 0;
 	
 protected:
@@ -63,6 +64,7 @@ public:
 	const bool GetStop() { return m_bStop; }
 	const DIR GetDir() { return m_dDir; }
 	bool GetInvincible() const { return m_bInvincible; }
+	int GetInvincibleTime() const { return m_nInvincibleTime; }
 
 	void SetFriction(float fFriction) { m_fFriction = fFriction; }
 	void SetGravity(const XMFLOAT3& xmf3Gravity) { m_xmf3Gravity = xmf3Gravity; }
@@ -75,6 +77,7 @@ public:
 	void SetJumping(bool bJump) { m_bJumping = bJump; }
 	void SetJumpDir(int nJumpDir) { m_nJumpDir = nJumpDir; }
 	void SetInvincible(bool bInvincible) { m_bInvincible = bInvincible; }
+	void SetInvincibleTime(int nTime) { m_nInvincibleTime = nTime; }
 
 	const XMFLOAT3& GetVelocity() const { return(m_xmf3Velocity); }
 	float GetYaw() const { return(m_fYaw); }

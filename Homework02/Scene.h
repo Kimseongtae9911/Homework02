@@ -57,8 +57,6 @@ public:
 	ID3D12RootSignature *CreateGraphicsRootSignature(ID3D12Device *pd3dDevice);
 	ID3D12RootSignature *GetGraphicsRootSignature() { return(m_pd3dGraphicsRootSignature); }
 
-	void CheckCollisionPlayerCar();
-
 	bool ProcessInput(UCHAR *pKeysBuffer);
     void AnimateObjects(float fTimeElapsed);
     void Render(ID3D12GraphicsCommandList *pd3dCommandList, CCamera *pCamera=NULL);
@@ -72,12 +70,15 @@ private:
 	void SetLightColor();
 	void PlayerInvincible();
 	void PlayerBoost();
+	void LightAnimate();
+	void CheckCollisionPlayerCar();
 
 private:
 	bool m_bGameStart = false;
 	int m_nAnimate = 0;
 	int m_nInvincibleLightDir = 1;
 	int m_nInvincibleCnt = 0;
+	long long m_llBoostTime = 0;
 
 public:
 	CPlayer* m_pPlayer = NULL;
