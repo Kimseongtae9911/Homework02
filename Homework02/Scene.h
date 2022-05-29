@@ -72,6 +72,7 @@ private:
 	void PlayerBoost();
 	void LightAnimate();
 	void CheckCollisionPlayerCar();
+	void Reset();
 
 private:
 	bool m_bGameStart = false;

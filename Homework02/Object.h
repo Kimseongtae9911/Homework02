@@ -178,6 +178,7 @@ public:
 	virtual void UpdateShaderVariable(ID3D12GraphicsCommandList* pd3dCommandList, CMaterial* pMaterial);
 
 	virtual void ReleaseUploadBuffers();
+	virtual void Reset() {}
 
 public:
 	XMFLOAT3 GetPosition();
@@ -266,6 +267,7 @@ public:
 
 	virtual void Animate(float fTimeElapsed, XMFLOAT4X4 *pxmf4x4Parent=NULL);
 	virtual void Render(ID3D12GraphicsCommandList *pd3dCommandList, CCamera *pCamera = NULL);
+	virtual void Reset();
 };
 
 class CRevolvingObject : public CGameObject
@@ -295,6 +297,7 @@ public:
 	virtual ~CMapObject();
 
 	virtual void Animate(float fTimeElapsed, XMFLOAT4X4* pxmf4x4Parent = NULL);
+	virtual void Reset() {}
 };
 
 class CCarObject : public CMapObject
@@ -304,6 +307,7 @@ public:
 	virtual ~CCarObject();
 
 	virtual void Animate(float fTimeElapsed, XMFLOAT4X4* pxmf4x4Parent = NULL);
+	virtual void Reset();
 
 private:	
 	void ResetPosSpeed();
@@ -317,6 +321,7 @@ public:
 
 	virtual void Animate(float fTimeElapsed, XMFLOAT4X4* pxmf4x4Parent = NULL) {}
 	virtual void Render(ID3D12GraphicsCommandList* pd3dCommandList, CCamera* pCamera = NULL);
+	virtual void Reset() {};
 };
 
 class CShieldObject : public CItemObject
@@ -324,6 +329,7 @@ class CShieldObject : public CItemObject
 public:
 	CShieldObject();
 	virtual ~CShieldObject();
+	virtual void Reset();
 };
 
 class CLifeObject : public CItemObject
@@ -331,4 +337,5 @@ class CLifeObject : public CItemObject
 public:
 	CLifeObject();
 	virtual ~CLifeObject() {}
+	virtual void Reset();
 };

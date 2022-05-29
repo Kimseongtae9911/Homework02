@@ -407,7 +407,7 @@ void CScene::CheckCollisionPlayerCar()
 							if (m_ppItemObjects[i]->GetShow()) {
 								m_ppItemObjects[i]->SetShow(false);
 								if (i == m_nCoinObjects + 1)
-									std::cout << "Game Over" << std::endl;
+									Reset();
 								break;
 							}
 						}
@@ -432,25 +432,61 @@ void CScene::CheckCollisionPlayerCar()
 	}
 }
 
+void CScene::Reset()
+{
+	for (int i = 0; i < m_nGameObjects; ++i) {
+		m_ppGameObjects[i]->Reset();
+		m_ppGameObjects[i]->UpdateOOBB(m_ppGameObjects[i]->GetPosition());
+	}
+
+	for (int i = 0; i < 6; ++i) {
+		m_ppGameMap[i]->SetPosition(0.0f, 0.0f, 300.0f + i * 350.0f);
+		m_ppGameMap[i]->Reset();
+	}
+
+	for (int i = 4; i < m_nMapObjects; ++i) {
+		m_ppGameMap[i]->SetPosition(-120.0f * (float)pow(-1, i), 0.0f, 100.0f + 100.0f * (i - 4));
+		m_ppGameMap[i]->Reset();
+	}
+
+	for (int i = 0; i < m_nCoinObjects; ++i) {
+		pCoinObject = new CRotatingObject();
+		pCoinObject->SetChild(pCoinModel, true);
+		m_ppItemObjects[i] = pCoinObject;
+	}
+
+	pShieldObject = new CShieldObject();
+	pShieldObject->SetChild(pShieldModel, true);
+	m_ppItemObjects[nShieldIndex] = pShieldObject;
+
+	for (int i = m_nCoinObjects + 1; i < m_nItemObjects; ++i) {
+		pLifeObject = new CLifeObject();
+		pLifeObject->SetChild(pLifeModel, true);
+		m_ppItemObjects[i] = pLifeObject;
+		m_ppItemObjects[i]->SetPosition(63.0f - ((i - m_nCoinObjects - 1) * 9.0f), 93.0f, -70.0f);
+		m_ppItemObjects[i]->SetShow(true);
+	}
+}
+
 void CScene::SpeedDown()
 {
 	float fVelocity;
 	for (int i = 0; i < m_nGameObjects; ++i) {
-		fVelocity = m_ppGameObjects[i]->GetVelocity() - 0.3f;
-		if (fVelocity < 0.4f)
+		fVelocity = m_ppGameObjects[i]->GetVelocity() - 1.2f;
+		if (fVelocity < 3.0f)
 			fVelocity = (float)uid(engine);
 		m_ppGameObjects[i]->SetVelocity(fVelocity);
 	}
 	for (int i = 0; i < m_nMapObjects; ++i) {
-		fVelocity = m_ppGameMap[i]->GetVelocity() - 0.3f;
-		if (fVelocity < 1.0f)
-			fVelocity = 1.0f;
+		fVelocity = m_ppGameMap[i]->GetVelocity() - 1.2f;
+		if (fVelocity < 3.0f)
+			fVelocity = 3.0f;
 		m_ppGameMap[i]->SetVelocity(fVelocity);
 	}
 	for (int i = 0; i < m_nItemObjects; ++i) {
-		fVelocity = m_ppItemObjects[i]->GetVelocity() - 0.3f;
-		if (fVelocity < 0.4f)
-			fVelocity = 0.4f;
+		fVelocity = m_ppItemObjects[i]->GetVelocity() - 1.2f;
+		if (fVelocity < 3.0f)
+			fVelocity = 3.0f;
 		m_ppItemObjects[i]->SetVelocity(fVelocity);
 	}
 }
@@ -460,28 +496,21 @@ void CScene::CollideAnimate()
 	XMFLOAT3 xmf3Pos;
 	for (int i = 0; i < m_nGameObjects; ++i) {
 		xmf3Pos = m_ppGameObjects[i]->GetPosition();
-		xmf3Pos.z += 1.0f;
+		xmf3Pos.z += 2.0f;
 		m_ppGameObjects[i]->SetPosition(xmf3Pos);
 		m_ppGameObjects[i]->UpdateOOBB(m_ppGameObjects[i]->GetPosition());
 	}
 	for (int i = 0; i < m_nMapObjects; ++i) {
 		xmf3Pos = m_ppGameMap[i]->GetPosition();
-		xmf3Pos.z += 1.0f;
+		xmf3Pos.z += 2.0f;
 		m_ppGameMap[i]->SetPosition(xmf3Pos);
 	}
 	for (int i = 0; i < m_nCoinObjects; ++i) {
 		xmf3Pos = m_ppItemObjects[i]->GetPosition();
-		xmf3Pos.z += 1.0f;
+		xmf3Pos.z += 2.0f;
 		m_ppItemObjects[i]->SetPosition(xmf3Pos);
 		m_ppItemObjects[i]->UpdateOOBB(m_ppItemObjects[i]->GetPosition());
 	}
-	/*if (m_nAnimate == 2 && !m_pPlayer->GetPlayOnce()) {
-		XMFLOAT3 xmf3pos = m_pPlayer->GetPosition();
-		xmf3pos.y = 0.0f;
-		m_pPlayer->SetPosition(xmf3pos);
-		m_pPlayer->SetJumpDir(1);
-		m_pPlayer->SetPlayOnce(true);
-	}*/
 	m_pPlayer->PlayerCollideAnimate(m_nAnimate);
 
 }
@@ -502,8 +531,6 @@ void CScene::Render(ID3D12GraphicsCommandList *pd3dCommandList, CCamera *pCamera
 	{
 		if (m_ppGameObjects[i])
 		{
-			if (m_bGameStart && !m_pPlayer->GetCollide())
-				m_ppGameObjects[i]->Animate(m_fElapsedTime, NULL);
 			m_ppGameObjects[i]->UpdateTransform(NULL);
 			m_ppGameObjects[i]->Render(pd3dCommandList, pCamera);
 		}
@@ -513,8 +540,6 @@ void CScene::Render(ID3D12GraphicsCommandList *pd3dCommandList, CCamera *pCamera
 	{
 		if (m_ppGameMap[i])
 		{
-			if (m_bGameStart && !m_pPlayer->GetCollide())
-				m_ppGameMap[i]->Animate(m_fElapsedTime, NULL);
 			m_ppGameMap[i]->UpdateTransform(NULL);
 			m_ppGameMap[i]->Render(pd3dCommandList, pCamera);
 		}
@@ -522,8 +547,6 @@ void CScene::Render(ID3D12GraphicsCommandList *pd3dCommandList, CCamera *pCamera
 
 	for (int i = 0; i < m_nItemObjects; ++i) {
 		if (m_ppItemObjects[i] && m_ppItemObjects[i]->GetShow()) {
-			if (m_bGameStart && !m_pPlayer->GetCollide())
-				m_ppItemObjects[i]->Animate(m_fElapsedTime, NULL);
 			m_ppItemObjects[i]->UpdateTransform(NULL);
 			m_ppItemObjects[i]->Render(pd3dCommandList, pCamera);
 		}
@@ -580,12 +603,12 @@ void CScene::PlayerBoost()
 	m_llBoostTime = ::GetTickCount64();
 	for (int i = 0; i < m_nGameObjects; ++i) {
 		m_ppGameObjects[i]->SetPrevVelocity(m_ppGameObjects[i]->GetVelocity());
-		m_ppGameObjects[i]->SetVelocity(m_ppGameObjects[i]->GetVelocity() + 6.0f);
+		m_ppGameObjects[i]->SetVelocity(m_ppGameObjects[i]->GetVelocity() + 24.0f);
 		m_ppGameObjects[i]->SetBoost(true);
 	}
 	for (int i = 0; i < m_nMapObjects; ++i) {
 		m_ppGameMap[i]->SetPrevVelocity(m_ppGameMap[i]->GetVelocity());
-		m_ppGameMap[i]->SetVelocity(m_ppGameMap[i]->GetVelocity() + 2.0f);
+		m_ppGameMap[i]->SetVelocity(m_ppGameMap[i]->GetVelocity() + 8.0f);
 	}
 
 	SetLightColor();

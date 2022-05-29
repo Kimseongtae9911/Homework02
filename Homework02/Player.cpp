@@ -59,7 +59,7 @@ void CPlayer::ReleaseShaderVariables()
 
 void CPlayer::Move(DIR dir)
 {
-#define MOVE_SPEED 1.5f
+#define MOVE_SPEED 3.0f
 
 	if (dir == DIR::LEFT) {
 		XMFLOAT3 xmf3pos = GetPosition();
@@ -128,7 +128,7 @@ void CPlayer::Move(const XMFLOAT3& xmf3Shift, bool bUpdateVelocity)
 
 void CPlayer::PlayerJump()
 {
-#define JUMP_SPEED 1.0f
+#define JUMP_SPEED 2.0f
 	XMFLOAT3 xmf3pos = GetPosition();
 
 	if (!m_bCollide) {
@@ -178,7 +178,7 @@ void CPlayer::PlayerCollideAnimate(int nAnimate)
 	case 1:
 		Rotate(0.0f, 20.0f, 0.0f);
 		++m_nSpinCnt;
-		if (m_nSpinCnt == 90) {
+		if (m_nSpinCnt == 30) {
 			m_nSpinCnt = 0;
 			m_bCollide = false;
 			m_bJumping = false;
@@ -192,9 +192,9 @@ void CPlayer::PlayerCollideAnimate(int nAnimate)
 		if (xmf3pos.y >= 45.0f) {
 			m_nJumpDir *= -1;
 		}
-		Rotate(-4.0f, 0.0f, 0.0f);
+		Rotate(-10.0f, 0.0f, 0.0f);
 		++m_nSpinCnt;
-		if (m_nSpinCnt == 90) {
+		if (m_nSpinCnt == 40) {
 			m_nSpinCnt = 0;
 			m_bCollide = false;
 			if (xmf3pos.y >= 0.0f) {
@@ -205,7 +205,6 @@ void CPlayer::PlayerCollideAnimate(int nAnimate)
 			m_nJumpDir = 1;
 			ResetSpawnTime();
 			m_bJumping = false;
-			m_nJumpDir = 1;
 		}
 		SetPosition(xmf3pos);
 		break;
@@ -448,7 +447,7 @@ void CCarPlayer::OnPrepareRender()
 
 CCamera *CCarPlayer::ChangeCamera(DWORD nNewCameraMode, float fTimeElapsed)
 {
-	XMFLOAT3 xmf3pos(0.0f, 0.0f, 1.0f);
+	XMFLOAT3 xmf3pos(100.0f, 10.0f, 1.0f);
 	DWORD nCurrentCameraMode = (m_pCamera) ? m_pCamera->GetMode() : 0x00;
 	if (nCurrentCameraMode == nNewCameraMode) return(m_pCamera);
 	switch (nNewCameraMode)
@@ -496,6 +495,7 @@ CCamera *CCarPlayer::ChangeCamera(DWORD nNewCameraMode, float fTimeElapsed)
 	}
 
 	m_pCamera->SetPosition(Vector3::Add(m_xmf3Position, m_pCamera->GetOffset()));
+
 	Update(fTimeElapsed);
 
 	return(m_pCamera);

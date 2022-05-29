@@ -689,15 +689,20 @@ void CRevolvingObject::Animate(float fTimeElapsed, XMFLOAT4X4 *pxmf4x4Parent)
 
 CMapObject::CMapObject()
 {
-	m_fVelocity = 1.5f;
+	m_fVelocity = 5.0f;
 }
 
 CMapObject::~CMapObject()
 {
 }
 
-#define MAX_SPEED 4.0f;
-#define GAIN_SPEED 0.0002f;
+void CMapObject::Reset()
+{
+	m_fVelocity = 5.0f;
+}
+
+#define MAX_SPEED 16.0f;
+#define GAIN_SPEED 0.004f;
 void CMapObject::Animate(float fTimeElapsed, XMFLOAT4X4* pxmf4x4Parent)
 {
 	m_fMaxSpeed = m_fVelocity + MAX_SPEED;
@@ -715,7 +720,7 @@ void CMapObject::Animate(float fTimeElapsed, XMFLOAT4X4* pxmf4x4Parent)
 
 std::random_device rd;
 std::mt19937 engine(rd());
-std::uniform_real_distribution<> uidr(0.6f, 1.7f);
+std::uniform_real_distribution<> uidr(4.0f, 6.8f);
 std::uniform_real_distribution<> uidr2(800.f, 2000.f);
 std::uniform_real_distribution<> uidr3(1500.f, 2000.f);
 std::uniform_int_distribution<> uidi(0, 2);
@@ -756,29 +761,29 @@ void CCarObject::Animate(float fTimeElapsed, XMFLOAT4X4* pxmf4x4Parent)
 	if (m_bBoost && !m_bCollide) {
 		switch (m_nBoostCollide) {
 		case 0:		// 플레이어가 왼쪽
-			xmf3pos.z += 2.0f;
-			xmf3pos.y += 1.0f;
-			xmf3pos.x += 2.0f;
-			Rotate(5.0f, 3.0f, 5.0f);
+			xmf3pos.z += 8.0f;
+			xmf3pos.y += 4.0f;
+			xmf3pos.x += 8.0f;
+			Rotate(20.0f, 12.0f, 20.0f);
 			if (xmf3pos.x > 300.0f) {
 				ResetPosSpeed();
 				ResetWorldMatrix();
 			}
 			break;
 		case 1:		// 플레이어가 오른쪽
-			xmf3pos.z += 2.0f;
-			xmf3pos.y += 1.0f;
-			xmf3pos.x -= 2.0f;
-			Rotate(5.0f, 3.0f, 5.0f);
+			xmf3pos.z += 8.0f;
+			xmf3pos.y += 4.0f;
+			xmf3pos.x -= 8.0f;
+			Rotate(20.0f, 12.0f, 20.0f);
 			if (xmf3pos.x > 300.0f) {
 				ResetPosSpeed();
 				ResetWorldMatrix();
 			}
 			break;
 		case 2:		// 플레이어와 같은 위치
-			xmf3pos.z += 2.0f;
-			xmf3pos.y += 2.0f;
-			Rotate(5.0f, 0.0f, 0.0f);
+			xmf3pos.z += 8.0f;
+			xmf3pos.y += 8.0f;
+			Rotate(20.0f, 0.0f, 0.0f);
 			if (xmf3pos.y > 300.0f) {
 				ResetPosSpeed();
 				ResetWorldMatrix();
@@ -809,7 +814,7 @@ void CCarObject::ResetPosSpeed()
 {
 	int pos = uidi(engine);
 	m_fVelocity = (float)uidr(engine);
-	if (m_bBoost) m_fVelocity += 7.0f;
+	if (m_bBoost) m_fVelocity += 28.0f;
 	switch (pos) {
 	case 0:
 		SetPosition(RIGHTROAD, 0.0f, 1340.0f);
@@ -823,16 +828,42 @@ void CCarObject::ResetPosSpeed()
 	}
 	m_bCollide = true;
 }
+
+void CCarObject::Reset()
+{
+	m_fVelocity = (float)uidr(engine);
+	m_fMaxSpeed = m_fVelocity + MAX_SPEED;
+
+	int pos = uidi(engine);
+	switch (pos) {
+	case 0:
+		SetPosition(RIGHTROAD, 0.0f, (float)uidr2(engine));
+		break;
+	case 1:
+		SetPosition(MIDDLEROAD, 0.0f, (float)uidr2(engine));
+		break;
+	case 2:
+		SetPosition(LEFTROAD, 0.0f, (float)uidr2(engine));
+		break;
+	default:
+		break;
+	}
+	m_xmf4x4ResetWorld = m_xmf4x4World;
+	m_xmf4x4ResetTransform = m_xmf4x4Transform;
+	m_bCollide = true;
+	m_bShow = true;
+	m_bBoost = false;
+}
 ////////////////////////////////////////////////////////////////////////////////////////////////////
 
 std::uniform_int_distribution<> uidcoin(5, 10);
 CRotatingObject::CRotatingObject()
 {
 	m_bCollide = false;
-	m_fVelocity = 0.7f;
+	m_fVelocity = 2.8f;
 	m_fScaleVal = 5.0f;
 	m_xmf3RotationAxis = XMFLOAT3(0.0f, 1.0f, 0.0f);
-	m_fRotationSpeed = 70.0f;
+	m_fRotationSpeed = 280.0f;
 	SetScale(m_fScaleVal, m_fScaleVal, m_fScaleVal);
 
 	int pos = uidi(engine);
@@ -911,15 +942,15 @@ void CRotatingObject::Animate(float fTimeElapsed, XMFLOAT4X4* pxmf4x4Parent)
 	}
 }
 
-
-void CRotatingObject::CheckTime()
-{
-}
-
 void CRotatingObject::Render(ID3D12GraphicsCommandList* pd3dCommandList, CCamera* pCamera)
 {
 	if(m_bShow)
 		CGameObject::Render(pd3dCommandList, pCamera);
+}
+
+void CRotatingObject::Reset()
+{
+
 }
 
 void CItemObject::Render(ID3D12GraphicsCommandList* pd3dCommandList, CCamera* pCamera)
