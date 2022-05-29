@@ -69,10 +69,15 @@ private:
 	void SpeedDown();
 	void CollideAnimate();
 	void CreateShield();
+	void SetLightColor();
+	void PlayerInvincible();
+	void PlayerBoost();
 
 private:
 	bool m_bGameStart = false;
 	int m_nAnimate = 0;
+	int m_nInvincibleLightDir = 1;
+	int m_nInvincibleCnt = 0;
 
 public:
 	CPlayer* m_pPlayer = NULL;

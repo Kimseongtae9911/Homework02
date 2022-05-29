@@ -21,15 +21,18 @@ void CScene::BuildDefaultLightsAndMaterials()
 
 	m_xmf4GlobalAmbient = XMFLOAT4(0.3f, 0.3f, 0.3f, 1.0f);
 
-	/*m_pLights[0].m_bEnable = true;
-	m_pLights[0].m_nType = POINT_LIGHT;
-	m_pLights[0].m_fRange = 1000.0f;
-	m_pLights[0].m_xmf4Ambient = XMFLOAT4(0.1f, 0.1f, 0.1f, 1.0f);
-	m_pLights[0].m_xmf4Diffuse = XMFLOAT4(0.8f, 0.8f, 0.8f, 1.0f);
-	m_pLights[0].m_xmf4Specular = XMFLOAT4(0.5f, 0.5f, 0.5f, 0.0f);
-	m_pLights[0].m_xmf3Position = XMFLOAT3(30.0f, 30.0f, 30.0f);
-	m_pLights[0].m_xmf3Direction = XMFLOAT3(0.0f, 0.0f, 0.0f);
-	m_pLights[0].m_xmf3Attenuation = XMFLOAT3(1.0f, 0.001f, 0.0001f);*/
+	m_pLights[0].m_bEnable = false;
+	m_pLights[0].m_nType = SPOT_LIGHT;
+	m_pLights[0].m_fRange = 600.0f;
+	m_pLights[0].m_xmf4Ambient = XMFLOAT4(0.6f, 0.6f, 0.6f, 1.0f);
+	m_pLights[0].m_xmf4Diffuse = XMFLOAT4(0.6f, 0.6f, 0.6f, 1.0f);
+	m_pLights[0].m_xmf4Specular = XMFLOAT4(0.6f, 0.6f, 0.6f, 0.0f);
+	m_pLights[0].m_xmf3Position = XMFLOAT3(0.0f, 60.0f, 0.0f);
+	m_pLights[0].m_xmf3Direction = XMFLOAT3(0.0f, -1.0f, 0.0f);
+	m_pLights[0].m_xmf3Attenuation = XMFLOAT3(1.0f, 0.01f, 0.0001f);
+	m_pLights[0].m_fFalloff = 8.0f;
+	m_pLights[0].m_fPhi = (float)cos(XMConvertToRadians(90.0f));
+	m_pLights[0].m_fTheta = (float)cos(XMConvertToRadians(30.0f));
 
 	m_pLights[1].m_bEnable = true;
 	m_pLights[1].m_nType = SPOT_LIGHT;
@@ -51,13 +54,13 @@ void CScene::BuildDefaultLightsAndMaterials()
 	m_pLights[2].m_xmf4Specular = XMFLOAT4(0.4f, 0.4f, 0.4f, 0.0f);
 	m_pLights[2].m_xmf3Direction = XMFLOAT3(1.0f, 0.0f, 0.0f);
 
-	m_pLights[3].m_bEnable = true;
+	m_pLights[3].m_bEnable = false;
 	m_pLights[3].m_nType = SPOT_LIGHT;
 	m_pLights[3].m_fRange = 600.0f;
 	m_pLights[3].m_xmf4Ambient = XMFLOAT4(0.7f, 0.3f, 0.3f, 1.0f);
-	m_pLights[3].m_xmf4Diffuse = XMFLOAT4(0.3f, 0.3f, 0.3f, 1.0f);
-	m_pLights[3].m_xmf4Specular = XMFLOAT4(0.3f, 0.3f, 0.3f, 0.0f);
-	m_pLights[3].m_xmf3Position = XMFLOAT3(0.0f, 30.0f, 0.0f);
+	m_pLights[3].m_xmf4Diffuse = XMFLOAT4(0.7f, 0.3f, 0.3f, 1.0f);
+	m_pLights[3].m_xmf4Specular = XMFLOAT4(0.7f, 0.3f, 0.3f, 0.0f);
+	m_pLights[3].m_xmf3Position = XMFLOAT3(1000.0f, 60.0f, 0.0f);
 	m_pLights[3].m_xmf3Direction = XMFLOAT3(0.0f, -1.0f, 0.0f);
 	m_pLights[3].m_xmf3Attenuation = XMFLOAT3(1.0f, 0.01f, 0.0001f);
 	m_pLights[3].m_fFalloff = 8.0f;
@@ -135,7 +138,6 @@ void CScene::BuildObjects(ID3D12Device *pd3dDevice, ID3D12GraphicsCommandList *p
 		pCoinObject = new CRotatingObject();
 		pCoinObject->SetChild(pCoinModel, true);
 		m_ppItemObjects[i] = pCoinObject;
-		//m_ppItemObjects[i]->SetShow(true);
 	}
 
 	CGameObject* pShieldModel = CGameObject::LoadGeometryFromFile(pd3dDevice, pd3dCommandList, m_pd3dGraphicsRootSignature, "Model/Shield.bin");
@@ -336,6 +338,14 @@ bool CScene::OnProcessingKeyboardMessage(HWND hWnd, UINT nMessageID, WPARAM wPar
 			if (m_pPlayer->GetCoinCnt() >= 5 && !m_ppItemObjects[m_nCoinObjects]->GetShow())
 				CreateShield();
 			break;
+		case 'A':
+			if (m_pPlayer->GetCoinCnt() >= 10)
+				PlayerInvincible();
+			break;
+		case 'D':
+			if (m_pPlayer->GetCoinCnt() >= 10)
+				PlayerBoost();
+			break;
 		case VK_RETURN:
 			m_bGameStart = true;
 			break;
@@ -391,7 +401,8 @@ void CScene::CheckCollisionPlayerCar()
 				m_ppItemObjects[i]->SetShow(false);
 				m_ppItemObjects[i]->ResetSpawnTime();
 				m_ppItemObjects[i]->SetCollide(true);
-				m_pPlayer->AddCoinCnt();
+				m_pPlayer->AddCoinCnt();		
+				SetLightColor();
 			}
 		}
 	}
@@ -433,6 +444,25 @@ void CScene::AnimateObjects(float fTimeElapsed)
 	{
 		m_pLights[1].m_xmf3Position = m_pPlayer->GetPosition();
 		m_pLights[1].m_xmf3Direction = m_pPlayer->GetLookVector();
+		m_pLights[3].m_xmf3Position.x = m_pPlayer->GetPosition().x;
+
+		// ¹«ÀûÀÏ¶§ Èò»ö ºû
+		if (m_pLights[0].m_bEnable && m_pPlayer->GetInvincible()) {
+			m_pLights[0].m_xmf3Position.x = m_pPlayer->GetPosition().x;
+			m_pLights[0].m_xmf3Position.y += m_nInvincibleLightDir * 5.0f;
+			if (m_pLights[0].m_xmf3Position.y > 150.0f)
+				m_nInvincibleLightDir = -1;
+			if (m_pLights[0].m_xmf3Position.y < 30.0f) {
+				m_nInvincibleLightDir = 1;
+				++m_nInvincibleCnt;
+			}
+			if (m_nInvincibleCnt == 7) {
+				m_pPlayer->SetInvincible(false);
+				m_nInvincibleCnt = 0;
+				m_pLights[0].m_bEnable = false;
+				m_pLights[0].m_xmf3Position.y = 60.0f;
+			}
+		}
 	}
 
 	CheckCollisionPlayerCar();
@@ -482,13 +512,51 @@ void CScene::Render(ID3D12GraphicsCommandList *pd3dCommandList, CCamera *pCamera
 	}
 }
 
+void CScene::SetLightColor()
+{
+	if (m_pPlayer->GetCoinCnt() >= 20) {
+		m_pLights[3].m_xmf4Ambient = XMFLOAT4(0.7f, 0.3f, 0.3f, 1.0f);
+		m_pLights[3].m_xmf4Diffuse = XMFLOAT4(0.7f, 0.3f, 0.3f, 1.0f);
+		m_pLights[3].m_xmf4Specular = XMFLOAT4(0.7f, 0.3f, 0.3f, 0.0f);
+	}
+	else if (m_pPlayer->GetCoinCnt() >= 10) {
+		m_pLights[3].m_xmf4Ambient = XMFLOAT4(0.3f, 0.7f, 0.3f, 1.0f);
+		m_pLights[3].m_xmf4Diffuse = XMFLOAT4(0.3f, 0.7f, 0.3f, 1.0f);
+		m_pLights[3].m_xmf4Specular = XMFLOAT4(0.3f, 0.7f, 0.3f, 0.0f);	
+	}
+	else if (m_pPlayer->GetCoinCnt() >= 5) {
+		m_pLights[3].m_bEnable = true;
+		m_pLights[3].m_xmf4Ambient = XMFLOAT4(0.3f, 0.3f, 0.7f, 1.0f);
+		m_pLights[3].m_xmf4Diffuse = XMFLOAT4(0.3f, 0.3f, 0.7f, 1.0f);
+		m_pLights[3].m_xmf4Specular = XMFLOAT4(0.3f, 0.3f, 0.7f, 0.0f);
+	}
+	else {
+		m_pLights[3].m_bEnable = false;
+	}
+}
+
 void CScene::CreateShield()
 {
 	XMFLOAT3 xmf3pos = m_pPlayer->GetPosition();
 	xmf3pos.y = 13.0f;
 	xmf3pos.z += 14.5f;
 	m_pPlayer->SetCointCnt(m_pPlayer->GetCoinCnt() - 5);
+	SetLightColor();
 	m_ppItemObjects[m_nCoinObjects]->SetShow(true);
 	m_ppItemObjects[m_nCoinObjects]->SetPosition(xmf3pos);
 	m_ppItemObjects[m_nCoinObjects]->UpdateOOBB(xmf3pos);
+}
+
+void CScene::PlayerInvincible()
+{
+	m_pPlayer->SetCointCnt(m_pPlayer->GetCoinCnt() - 10);
+	SetLightColor();
+	m_pPlayer->SetInvincible(true);
+	m_pLights[0].m_bEnable = true;
+}
+
+void CScene::PlayerBoost()
+{
+	m_pPlayer->SetCointCnt(m_pPlayer->GetCoinCnt() - 20);
+	SetLightColor();
 }
