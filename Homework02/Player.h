@@ -29,6 +29,8 @@ protected:
 
 	int m_nCoinCnt = 0;
 	
+	XMFLOAT3 m_xmf3CameraPos;
+
 protected:
 	XMFLOAT3					m_xmf3Position;
 	XMFLOAT3					m_xmf3Right;
@@ -78,12 +80,14 @@ public:
 	void SetJumpDir(int nJumpDir) { m_nJumpDir = nJumpDir; }
 	void SetInvincible(bool bInvincible) { m_bInvincible = bInvincible; }
 	void SetInvincibleTime(int nTime) { m_nInvincibleTime = nTime; }
+	void SetCameraPos(const XMFLOAT3& xmf3CamPos) { m_xmf3CameraPos = xmf3CamPos; }
 
 	const XMFLOAT3& GetVelocity() const { return(m_xmf3Velocity); }
 	float GetYaw() const { return(m_fYaw); }
 	float GetPitch() const { return(m_fPitch); }
 	float GetRoll() const { return(m_fRoll); }
 	const bool GetJumping() const { return m_bJumping; }
+	XMFLOAT3 GetCameraPos() const { return m_pCamera->GetPosition(); }
 
 	CCamera *GetCamera() { return(m_pCamera); }
 	void SetCamera(CCamera *pCamera) { m_pCamera = pCamera; }

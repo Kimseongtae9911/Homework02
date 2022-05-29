@@ -345,9 +345,10 @@ void CScene::AnimateObjects(float fTimeElapsed)
 				m_ppGameObjects[i]->SetBoost(false);
 				m_ppGameObjects[i]->ResetWorldMatrix();
 			}
-			for (int i = 0; i < m_nMapObjects; ++i) {
+			for (int i = 0; i < m_nMapObjects; ++i)
 				m_ppGameMap[i]->SetVelocity(m_ppGameMap[i]->GetPrevVelocity());
-			}
+			for (int i = 0; i < m_nCoinObjects; ++i)
+				m_ppItemObjects[i]->SetVelocity(m_ppItemObjects[i]->GetPrevVelocity());
 		}
 		else if ((time - m_llBoostTime) % 100 >= 0 && (time - m_llBoostTime) % 100 <= 50) {
 			m_xmf4GlobalAmbient.x = 0.6f;
@@ -412,7 +413,8 @@ void CScene::CheckCollisionPlayerCar()
 						if (!m_pPlayer->GetCollide())
 							m_nAnimate = uidi(engine);
 						m_pPlayer->SetCollide(true);
-						SpeedDown();
+						SpeedDown();						
+						m_pPlayer->SetCameraPos(m_pPlayer->GetCameraPos());
 						// ¸ñ¼û °¨¼Ò
 						for (int i = m_nItemObjects - 1; i >= m_nCoinObjects + 1; --i) {
 							if (m_ppItemObjects[i]->GetShow()) {
@@ -421,7 +423,6 @@ void CScene::CheckCollisionPlayerCar()
 									//Game Over
 									m_bGameOver = true;
 									m_llResetTime = ::GetTickCount64();
-									//Reset();
 								}
 								break;
 							}
@@ -502,19 +503,19 @@ void CScene::SpeedDown()
 {
 	float fVelocity;
 	for (int i = 0; i < m_nGameObjects; ++i) {
-		fVelocity = m_ppGameObjects[i]->GetVelocity() - 1.2f;
+		fVelocity = m_ppGameObjects[i]->GetVelocity() - 3.0f;
 		if (fVelocity < 3.0f)
 			fVelocity = (float)uid(engine);
 		m_ppGameObjects[i]->SetVelocity(fVelocity);
 	}
 	for (int i = 0; i < m_nMapObjects; ++i) {
-		fVelocity = m_ppGameMap[i]->GetVelocity() - 1.2f;
+		fVelocity = m_ppGameMap[i]->GetVelocity() - 3.0f;
 		if (fVelocity < 3.0f)
 			fVelocity = 3.0f;
 		m_ppGameMap[i]->SetVelocity(fVelocity);
 	}
 	for (int i = 0; i < m_nItemObjects; ++i) {
-		fVelocity = m_ppItemObjects[i]->GetVelocity() - 1.2f;
+		fVelocity = m_ppItemObjects[i]->GetVelocity() - 3.0f;
 		if (fVelocity < 3.0f)
 			fVelocity = 3.0f;
 		m_ppItemObjects[i]->SetVelocity(fVelocity);
@@ -640,6 +641,11 @@ void CScene::PlayerBoost()
 		m_ppGameMap[i]->SetPrevVelocity(m_ppGameMap[i]->GetVelocity());
 		m_ppGameMap[i]->SetVelocity(m_ppGameMap[i]->GetVelocity() + 8.0f);
 	}
+	for (int i = 0; i < m_nCoinObjects; ++i) {
+		m_ppItemObjects[i]->SetPrevVelocity(m_ppItemObjects[i]->GetVelocity());
+		m_ppItemObjects[i]->SetVelocity(m_ppItemObjects[i]->GetVelocity() + 24.0f);
+	}
+
 
 	SetLightColor();
 }

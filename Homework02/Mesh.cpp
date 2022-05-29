@@ -6,7 +6,7 @@
 #include "Mesh.h"
 
 /////////////////////////////////////////////////////////////////////////////////////////////////
-//
+
 CMeshLoadInfo::~CMeshLoadInfo()
 {
 	if (m_pxmf3Positions) delete[] m_pxmf3Positions;
@@ -22,7 +22,7 @@ CMeshLoadInfo::~CMeshLoadInfo()
 }
 
 /////////////////////////////////////////////////////////////////////////////////////////////////
-//
+
 CMeshFromFile::CMeshFromFile(ID3D12Device *pd3dDevice, ID3D12GraphicsCommandList *pd3dCommandList, CMeshLoadInfo *pMeshInfo)
 {
 	m_nVertices = pMeshInfo->m_nVertices;
