@@ -327,8 +327,7 @@ void CScene::AnimateObjects(float fTimeElapsed)
 	}
 
 	for (int i = m_nCoinObjects + 1; i < m_nItemObjects; ++i) {		// nCoinObjects + 1부터 목숨개수까지
-		m_ppItemObjects[i]->SetPosition(m_pPlayer->GetPosition().x + 63.0f - ((i - m_nCoinObjects - 1) * 9.0f),
-			m_pPlayer->GetPosition().y + 93.0f, -70.0f);
+		m_ppItemObjects[i]->SetPosition(m_pPlayer->GetPosition().x + 63.0f - ((i - m_nCoinObjects - 1) * 9.0f), m_pPlayer->GetPosition().y + 93.0f, -70.0f);
 	}
 
 	// 플레이어 부스터 끝날 때 처리
@@ -397,7 +396,8 @@ void CScene::CheckCollisionPlayerCar()
 					}
 					else {
 						m_pPlayer->SetInvincible(true);
-						m_pPlayer->SetInvincibleTime(3000);
+						m_pPlayer->SetInvincibleTime(2000);
+						m_pPlayer->SetJumpDir(1);
 						m_ppGameObjects[i]->SetCollide(false);
 						if (!m_pPlayer->GetCollide())
 							m_nAnimate = uidi(engine);
@@ -475,13 +475,13 @@ void CScene::CollideAnimate()
 		m_ppItemObjects[i]->SetPosition(xmf3Pos);
 		m_ppItemObjects[i]->UpdateOOBB(m_ppItemObjects[i]->GetPosition());
 	}
-	if (m_nAnimate == 2 && !m_pPlayer->GetPlayOnce()) {
+	/*if (m_nAnimate == 2 && !m_pPlayer->GetPlayOnce()) {
 		XMFLOAT3 xmf3pos = m_pPlayer->GetPosition();
 		xmf3pos.y = 0.0f;
 		m_pPlayer->SetPosition(xmf3pos);
 		m_pPlayer->SetJumpDir(1);
 		m_pPlayer->SetPlayOnce(true);
-	}
+	}*/
 	m_pPlayer->PlayerCollideAnimate(m_nAnimate);
 
 }

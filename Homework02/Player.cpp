@@ -166,8 +166,9 @@ void CPlayer::PlayerCollideAnimate(int nAnimate)
 			m_nJumpDir *= -1;
 		}
 		if (xmf3pos.y <= 0.0f) {
-			m_nJumpDir *= -1;
 			m_bCollide = false;
+			m_bJumping = false;
+			m_nJumpDir = 1;
 			xmf3pos.y = 0.0f;
 			ResetRULvec();
 			ResetSpawnTime();
@@ -180,6 +181,8 @@ void CPlayer::PlayerCollideAnimate(int nAnimate)
 		if (m_nSpinCnt == 90) {
 			m_nSpinCnt = 0;
 			m_bCollide = false;
+			m_bJumping = false;
+			m_nJumpDir = 1;
 			ResetRULvec();
 			ResetSpawnTime();
 		}
@@ -201,13 +204,15 @@ void CPlayer::PlayerCollideAnimate(int nAnimate)
 			SetPlayOnce(false);
 			m_nJumpDir = 1;
 			ResetSpawnTime();
+			m_bJumping = false;
+			m_nJumpDir = 1;
 		}
 		SetPosition(xmf3pos);
 		break;
 	default:
 		break;
 	}
-	
+		
 	UpdateOOBB(GetPosition());
 }
 
