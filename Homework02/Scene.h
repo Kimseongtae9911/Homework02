@@ -76,10 +76,13 @@ private:
 
 private:
 	bool m_bGameStart = false;
+	bool m_bGameOver = false;
+
 	int m_nAnimate = 0;
 	int m_nInvincibleLightDir = 1;
 	int m_nInvincibleCnt = 0;
 	long long m_llBoostTime = 0;
+	long long m_llResetTime = 0;
 
 public:
 	CPlayer* m_pPlayer = NULL;

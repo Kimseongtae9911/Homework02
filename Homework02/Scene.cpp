@@ -363,6 +363,16 @@ void CScene::AnimateObjects(float fTimeElapsed)
 		CollideAnimate();			// 모든 오브젝트에 공통으로 적용되는 애니메이션
 	}
 	
+	if (m_bGameOver) {
+		m_pPlayer->SetPosition(XMFLOAT3(0.0f, -500.0f, 0.0f));
+		m_pPlayer->Rotate(0.0f, 20.0f, 0.0f);
+		long long time = GetTickCount64();
+		if (time - m_llResetTime > 4000) {
+			m_bGameOver = false;
+			Reset();
+		}
+	}
+
 	LightAnimate();
 	CheckCollisionPlayerCar();		// 충돌처리
 }
@@ -394,7 +404,7 @@ void CScene::CheckCollisionPlayerCar()
 							m_ppGameObjects[i]->SetBoostCollde(0);	//플레이어가 오른쪽
 						}
 					}
-					else {
+					else {	// 쉴드 없을 때 충돌
 						m_pPlayer->SetInvincible(true);
 						m_pPlayer->SetInvincibleTime(2000);
 						m_pPlayer->SetJumpDir(1);
@@ -403,11 +413,16 @@ void CScene::CheckCollisionPlayerCar()
 							m_nAnimate = uidi(engine);
 						m_pPlayer->SetCollide(true);
 						SpeedDown();
+						// 목숨 감소
 						for (int i = m_nItemObjects - 1; i >= m_nCoinObjects + 1; --i) {
 							if (m_ppItemObjects[i]->GetShow()) {
 								m_ppItemObjects[i]->SetShow(false);
-								if (i == m_nCoinObjects + 1)
-									Reset();
+								if (i == m_nCoinObjects + 1) {
+									//Game Over
+									m_bGameOver = true;
+									m_llResetTime = ::GetTickCount64();
+									//Reset();
+								}
 								break;
 							}
 						}
@@ -434,6 +449,7 @@ void CScene::CheckCollisionPlayerCar()
 
 void CScene::Reset()
 {
+	//Object Reset
 	for (int i = 0; i < m_nGameObjects; ++i) {
 		m_ppGameObjects[i]->Reset();
 		m_ppGameObjects[i]->UpdateOOBB(m_ppGameObjects[i]->GetPosition());
@@ -449,23 +465,37 @@ void CScene::Reset()
 		m_ppGameMap[i]->Reset();
 	}
 
-	for (int i = 0; i < m_nCoinObjects; ++i) {
-		pCoinObject = new CRotatingObject();
-		pCoinObject->SetChild(pCoinModel, true);
-		m_ppItemObjects[i] = pCoinObject;
-	}
+	for (int i = 0; i < m_nCoinObjects; ++i)
+		m_ppItemObjects[i]->Reset();
 
-	pShieldObject = new CShieldObject();
-	pShieldObject->SetChild(pShieldModel, true);
-	m_ppItemObjects[nShieldIndex] = pShieldObject;
+	m_ppItemObjects[m_nCoinObjects]->Reset();
 
-	for (int i = m_nCoinObjects + 1; i < m_nItemObjects; ++i) {
-		pLifeObject = new CLifeObject();
-		pLifeObject->SetChild(pLifeModel, true);
-		m_ppItemObjects[i] = pLifeObject;
-		m_ppItemObjects[i]->SetPosition(63.0f - ((i - m_nCoinObjects - 1) * 9.0f), 93.0f, -70.0f);
-		m_ppItemObjects[i]->SetShow(true);
-	}
+	for (int i = m_nCoinObjects + 1; i < m_nItemObjects; ++i)
+		m_ppItemObjects[i]->Reset();
+
+	//Player Reset
+	m_pPlayer->Reset();
+	m_bGameStart = false;
+
+	//Light Reset
+	m_xmf4GlobalAmbient = XMFLOAT4(0.3f, 0.3f, 0.3f, 1.0f);
+
+	m_pLights[0].m_bEnable = false;
+	m_pLights[0].m_xmf4Ambient = XMFLOAT4(0.6f, 0.6f, 0.6f, 1.0f);
+	m_pLights[0].m_xmf4Diffuse = XMFLOAT4(0.6f, 0.6f, 0.6f, 1.0f);
+	m_pLights[0].m_xmf4Specular = XMFLOAT4(0.6f, 0.6f, 0.6f, 0.0f);
+	m_pLights[0].m_xmf3Position = XMFLOAT3(0.0f, 60.0f, 0.0f);
+
+	m_pLights[2].m_bEnable = true;
+	m_pLights[2].m_xmf4Ambient = XMFLOAT4(0.4f, 0.4f, 0.4f, 1.0f);
+	m_pLights[2].m_xmf4Diffuse = XMFLOAT4(0.8f, 0.8f, 0.8f, 1.0f);
+	m_pLights[2].m_xmf4Specular = XMFLOAT4(0.4f, 0.4f, 0.4f, 0.0f);
+
+	m_pLights[3].m_bEnable = false;
+	m_pLights[3].m_xmf4Ambient = XMFLOAT4(0.7f, 0.3f, 0.3f, 1.0f);
+	m_pLights[3].m_xmf4Diffuse = XMFLOAT4(0.7f, 0.3f, 0.3f, 1.0f);
+	m_pLights[3].m_xmf4Specular = XMFLOAT4(0.7f, 0.3f, 0.3f, 0.0f);
+	m_pLights[3].m_xmf3Position = XMFLOAT3(1000.0f, 60.0f, 0.0f);
 }
 
 void CScene::SpeedDown()

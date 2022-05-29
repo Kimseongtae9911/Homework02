@@ -297,7 +297,7 @@ public:
 	virtual ~CMapObject();
 
 	virtual void Animate(float fTimeElapsed, XMFLOAT4X4* pxmf4x4Parent = NULL);
-	virtual void Reset() {}
+	virtual void Reset();
 };
 
 class CCarObject : public CMapObject
@@ -321,7 +321,7 @@ public:
 
 	virtual void Animate(float fTimeElapsed, XMFLOAT4X4* pxmf4x4Parent = NULL) {}
 	virtual void Render(ID3D12GraphicsCommandList* pd3dCommandList, CCamera* pCamera = NULL);
-	virtual void Reset() {};
+	virtual void Reset() {}
 };
 
 class CShieldObject : public CItemObject

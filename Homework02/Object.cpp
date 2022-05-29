@@ -950,7 +950,27 @@ void CRotatingObject::Render(ID3D12GraphicsCommandList* pd3dCommandList, CCamera
 
 void CRotatingObject::Reset()
 {
+	m_bCollide = false;
+	m_fVelocity = 2.8f;
 
+	int pos = uidi(engine);
+	switch (pos) {
+	case 0:
+		SetPosition(RIGHTROAD, 7.0f, (float)uidr3(engine));
+		break;
+	case 1:
+		SetPosition(MIDDLEROAD, 7.0f, (float)uidr3(engine));
+		break;
+	case 2:
+		SetPosition(LEFTROAD, 7.0f, (float)uidr3(engine));
+		break;
+	default:
+		break;
+	}
+
+	m_llSpawnTime = ::GetTickCount64();
+	m_nRespawnTime = uidcoin(engine);
+	UpdateOOBB(GetPosition());
 }
 
 void CItemObject::Render(ID3D12GraphicsCommandList* pd3dCommandList, CCamera* pCamera)
@@ -975,6 +995,12 @@ CShieldObject::~CShieldObject()
 {
 }
 
+void CShieldObject::Reset()
+{
+	m_bCollide = false;
+	m_bShow = false;
+}
+
 CLifeObject::CLifeObject()
 {
 	m_bShow = true;
@@ -982,4 +1008,9 @@ CLifeObject::CLifeObject()
 	Rotate(0.0f, -120.0f, 0.0f);
 	m_fScaleVal = 2.5f;
 	SetScale(m_fScaleVal, m_fScaleVal, m_fScaleVal);
+}
+
+void CLifeObject::Reset()
+{
+	m_bShow = true;
 }

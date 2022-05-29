@@ -123,6 +123,8 @@ public:
 
 	void SetPlayOnce(bool bPlayOnce) { m_bPlayOnce = bPlayOnce; }
 	bool GetPlayOnce() const { return m_bPlayOnce; }
+
+	void Reset();
 };
 
 class CCarPlayer : public CPlayer

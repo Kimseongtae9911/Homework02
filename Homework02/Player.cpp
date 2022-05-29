@@ -396,6 +396,22 @@ void CPlayer::Render(ID3D12GraphicsCommandList *pd3dCommandList, CCamera *pCamer
 	}
 }
 
+void CPlayer::Reset()
+{
+	SetPosition(XMFLOAT3(0.0f, 0.0f, 0.0f));
+	m_bCollide = false;
+	m_nCoinCnt = 0;
+	m_bStop = true;
+
+	m_bJumping = false;
+	m_nJumpDir = 1;
+	m_bPlayOnce = false;
+
+	m_bInvincible = false;
+
+	ResetRULvec();
+}
+
 ///////////////////////////////////////////////////////////////////////////////////////////////////////////////////
 
 CCarPlayer::CCarPlayer(ID3D12Device *pd3dDevice, ID3D12GraphicsCommandList *pd3dCommandList, ID3D12RootSignature *pd3dGraphicsRootSignature)
