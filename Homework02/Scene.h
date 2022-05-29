@@ -65,9 +65,14 @@ public:
 
 	void ReleaseUploadBuffers();
 
-	
+private:
+	void SpeedDown();
+	void CollideAnimate();
+	void CreateShield();
+
 private:
 	bool m_bGameStart = false;
+	int m_nAnimate = 0;
 
 public:
 	CPlayer* m_pPlayer = NULL;
@@ -80,6 +85,9 @@ public:
 	CGameObject** m_ppGameMap = NULL;
 	int m_nMapObjects = 0;
 
+	CGameObject** m_ppItemObjects = NULL;
+	int m_nItemObjects = 0;
+	int m_nCoinObjects = 0;
 
 	LIGHT						*m_pLights = NULL;
 	int							m_nLights = 0;

@@ -401,7 +401,7 @@ void CGameFramework::BuildObjects()
 	if (m_pScene) 
 		m_pScene->BuildObjects(m_pd3dDevice, m_pd3dCommandList);
 
-	CAirplanePlayer *pAirplanePlayer = new CAirplanePlayer(m_pd3dDevice, m_pd3dCommandList, m_pScene->GetGraphicsRootSignature());
+	CCarPlayer *pAirplanePlayer = new CCarPlayer(m_pd3dDevice, m_pd3dCommandList, m_pScene->GetGraphicsRootSignature());
 	pAirplanePlayer->SetPosition(XMFLOAT3(0.0f, 0.0f, 0.0f));
 	m_pScene->m_pPlayer = m_pPlayer = pAirplanePlayer;
 	m_pCamera = m_pPlayer->GetCamera();
@@ -434,7 +434,7 @@ void CGameFramework::ProcessInput()
 	static UCHAR pKeysBuffer[256];
 	bool bProcessedByScene = false;
 	if (GetKeyboardState(pKeysBuffer) && m_pScene) bProcessedByScene = m_pScene->ProcessInput(pKeysBuffer);
-	if (!bProcessedByScene)
+	if (!bProcessedByScene && !m_pPlayer->GetCollide())
 	{
 		DWORD dwDirection = 0;
 		if (pKeysBuffer[VK_UP] & 0xF0) dwDirection |= DIR_FORWARD;
@@ -473,13 +473,13 @@ void CGameFramework::ProcessInput()
 					m_pPlayer->Rotate(cyDelta, cxDelta, 0.0f);
 			}
 			if (dwDirection) {
-				m_pPlayer->Move(dwDirection, 5.0f, false);
-				m_pPlayer->UpdateOOBB(m_pPlayer->GetPosition());
+				//m_pPlayer->Move(dwDirection, 5.0f, false);
+				//m_pPlayer->UpdateOOBB(m_pPlayer->GetPosition());
 			}
 		}
 		if (!m_pPlayer->GetStop()) {
-			//m_pPlayer->Move(m_pPlayer->GetDir());
-			//m_pPlayer->UpdateOOBB(m_pPlayer->GetPosition());
+			m_pPlayer->Move(m_pPlayer->GetDir());
+			m_pPlayer->UpdateOOBB(m_pPlayer->GetPosition());
 		}
 	}
 	m_pPlayer->Update(m_GameTimer.GetTimeElapsed());
@@ -525,7 +525,7 @@ void CGameFramework::MoveToNextFrame()
 
 void CGameFramework::FrameAdvance()
 {    
-	m_GameTimer.Tick(0.0f);
+	m_GameTimer.Tick(144.0f);
 	
 	ProcessInput();
 

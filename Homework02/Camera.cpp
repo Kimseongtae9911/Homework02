@@ -260,7 +260,7 @@ CThirdPersonCamera::CThirdPersonCamera(CCamera *pCamera) : CCamera(pCamera)
 
 void CThirdPersonCamera::Update(XMFLOAT3& xmf3LookAt, float fTimeElapsed)
 {
-	if (m_pPlayer)
+	if (m_pPlayer && !(m_nMode & THIRD_PERSON_CAMERA))
 	{
 		XMFLOAT4X4 xmf4x4Rotate = Matrix4x4::Identity();
 		XMFLOAT3 xmf3Right = m_pPlayer->GetRightVector();
@@ -292,5 +292,7 @@ void CThirdPersonCamera::SetLookAt(XMFLOAT3& xmf3LookAt)
 	XMFLOAT4X4 mtxLookAt = Matrix4x4::LookAtLH(m_xmf3Position, xmf3LookAt, m_pPlayer->GetUpVector());
 	m_xmf3Right = XMFLOAT3(mtxLookAt._11, mtxLookAt._21, mtxLookAt._31);
 	m_xmf3Up = XMFLOAT3(mtxLookAt._12, mtxLookAt._22, mtxLookAt._32);
+	if (m_xmf3Up.y < 0.0f)
+		m_xmf3Up.y *= -1;
 	m_xmf3Look = XMFLOAT3(mtxLookAt._13, mtxLookAt._23, mtxLookAt._33);
 }

@@ -141,7 +141,13 @@ protected:
 	static XMFLOAT3 m_xmf3Center;
 	static XMFLOAT3 m_xmf3Extent;
 
+	bool m_bShow = false;
+
 	float m_fVelocity = 0.0f;
+
+	float m_fScaleVal = 10.0f;
+
+	long long m_llSpawnTime = 0;
 
 public:
 	void SetMesh(CMesh* pMesh);
@@ -168,6 +174,7 @@ public:
 
 	virtual void ReleaseUploadBuffers();
 
+public:
 	XMFLOAT3 GetPosition();
 	XMFLOAT3 GetLook();
 	XMFLOAT3 GetUp();
@@ -176,7 +183,10 @@ public:
 	const XMFLOAT3& GetCenter() const { return m_xmf3Center; }
 	XMFLOAT3 GetExtent() { return m_xmf3Extent; }
 	const bool GetCollide() const { return m_bCollide; }
+	float GetScaleVal() const { return m_fScaleVal; }
+	bool GetShow() const { return m_bShow; }
 
+public:
 	void SetPosition(float x, float y, float z);
 	void SetPosition(XMFLOAT3 xmf3Position);
 	void SetScale(float x, float y, float z);
@@ -184,7 +194,9 @@ public:
 	void SetCenter(XMFLOAT3& xmf3Center) { m_xmf3Center = xmf3Center; }
 	void SetExtent(XMFLOAT3& xmf3Extent) { m_xmf3Extent = xmf3Extent; }
 	void SetCollide(bool bCollide) { m_bCollide = bCollide; }
-
+	void SetShow(bool bShow) { m_bShow = bShow; }
+	
+public:
 	void MoveStrafe(float fDistance = 1.0f);
 	void MoveUp(float fDistance = 1.0f);
 	void MoveForward(float fDistance = 1.0f);
@@ -199,6 +211,9 @@ public:
 
 	UINT GetMeshType() { return((m_pMesh) ? m_pMesh->GetType() : 0); }
 
+	void ResetSpawnTime() { m_llSpawnTime = ::GetTickCount64(); }
+
+public:
 	BoundingOrientedBox& GetOOBB() { return m_xmOOBB; }
 	void SetOOBB(BoundingOrientedBox& OOBB) { m_xmOOBB = OOBB; }
 	void SetOOBB(const BoundingOrientedBox& OOBB) { m_xmOOBB = OOBB; }
@@ -223,9 +238,15 @@ public:
 	CRotatingObject();
     virtual ~CRotatingObject();
 
-private:
+protected:
 	XMFLOAT3					m_xmf3RotationAxis;
 	float						m_fRotationSpeed;
+	float m_fMaxSpeed = 0.0f;
+
+	int m_nRespawnTime = 0;
+
+private:
+	void CheckTime();
 
 public:
 	void SetRotationSpeed(float fRotationSpeed) { m_fRotationSpeed = fRotationSpeed; }
@@ -252,32 +273,6 @@ public:
 	virtual void Animate(float fTimeElapsed, XMFLOAT4X4 *pxmf4x4Parent=NULL);
 };
 
-class CHellicopterObject : public CGameObject
-{
-public:
-	CHellicopterObject();
-	virtual ~CHellicopterObject();
-
-protected:
-	CGameObject					*m_pMainRotorFrame = NULL;
-	CGameObject					*m_pTailRotorFrame = NULL;
-
-public:
-	virtual void OnInitialize();
-	virtual void Animate(float fTimeElapsed, XMFLOAT4X4 *pxmf4x4Parent = NULL);
-};
-
-class CApacheObject : public CHellicopterObject
-{
-public:
-	CApacheObject();
-	virtual ~CApacheObject();
-
-public:
-	virtual void OnInitialize();
-	virtual void Animate(float fTimeElapsed, XMFLOAT4X4 *pxmf4x4Parent = NULL);
-};
-
 class CMapObject : public CGameObject
 {
 protected:
@@ -297,4 +292,28 @@ public:
 	virtual ~CCarObject();
 
 	virtual void Animate(float fTimeElapsed, XMFLOAT4X4* pxmf4x4Parent = NULL);
+};
+
+class CItemObject : public CGameObject
+{
+public:
+	CItemObject() { }
+	virtual ~CItemObject() {}
+
+	virtual void Animate(float fTimeElapsed, XMFLOAT4X4* pxmf4x4Parent = NULL) {}
+	virtual void Render(ID3D12GraphicsCommandList* pd3dCommandList, CCamera* pCamera = NULL);
+};
+
+class CShieldObject : public CItemObject
+{
+public:
+	CShieldObject();
+	virtual ~CShieldObject();
+};
+
+class CLifeObject : public CItemObject
+{
+public:
+	CLifeObject();
+	virtual ~CLifeObject() {}
 };

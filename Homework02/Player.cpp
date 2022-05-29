@@ -6,6 +6,8 @@
 #include "Player.h"
 #include "Shader.h"
 
+int CPlayer::m_nSpinCnt = 0;
+
 ///////////////////////////////////////////////////////////////////////////////////////////////////////////////////
 
 CPlayer::CPlayer()
@@ -127,20 +129,86 @@ void CPlayer::Move(const XMFLOAT3& xmf3Shift, bool bUpdateVelocity)
 void CPlayer::PlayerJump()
 {
 #define JUMP_SPEED 1.0f
-
-	m_bJumping = true;
 	XMFLOAT3 xmf3pos = GetPosition();
-	
-	xmf3pos.y += JUMP_SPEED * m_nJumpDir;
-	if (xmf3pos.y >= 40.0f) {
-		m_nJumpDir *= -1;
-	}
-	if (xmf3pos.y < 0.0f) {
-		m_nJumpDir *= -1;
-		m_bJumping = false;
-		xmf3pos.y = 0.0f;
+
+	if (!m_bCollide) {
+		m_bJumping = true;
+
+		xmf3pos.y += JUMP_SPEED * m_nJumpDir;
+		if (xmf3pos.y >= 40.0f) {
+			m_nJumpDir *= -1;
+		}
+		if (xmf3pos.y < 0.0f) {
+			m_nJumpDir *= -1;
+			m_bJumping = false;
+			xmf3pos.y = 0.0f;
+		}
 	}
 	SetPosition(xmf3pos);
+}
+
+void CPlayer::ResetRULvec()
+{
+	m_xmf3Right.x = 1.0f; m_xmf3Right.y = 0.0f; m_xmf3Right.z = 0.0f;
+	m_xmf3Up.x = 0.0f; m_xmf3Up.y = 1.0f; m_xmf3Up.z = 0.0f;
+	m_xmf3Look.x = 0.0f; m_xmf3Look.y = 0.0f; m_xmf3Look.z = 1.0f;
+}
+
+void CPlayer::PlayerCollideAnimate(int nAnimate)
+{
+	XMFLOAT3 xmf3pos = GetPosition();
+
+	switch(nAnimate)
+	{
+	case 0:
+		xmf3pos.y += JUMP_SPEED * m_nJumpDir;
+		if (xmf3pos.y >= 45.0f) {
+			m_nJumpDir *= -1;
+		}
+		if (xmf3pos.y <= 0.0f) {
+			m_nJumpDir *= -1;
+			m_bCollide = false;
+			xmf3pos.y = 0.0f;
+			ResetRULvec();
+			ResetSpawnTime();
+		}
+		SetPosition(xmf3pos);
+		break;
+	case 1:
+		Rotate(0.0f, 20.0f, 0.0f);
+		++m_nSpinCnt;
+		if (m_nSpinCnt == 90) {
+			m_nSpinCnt = 0;
+			m_bCollide = false;
+			ResetRULvec();
+			ResetSpawnTime();
+		}
+		break;
+	case 2: 
+		xmf3pos.y += JUMP_SPEED * m_nJumpDir;
+		if (xmf3pos.y >= 45.0f) {
+			m_nJumpDir *= -1;
+		}
+		Rotate(-4.0f, 0.0f, 0.0f);
+		++m_nSpinCnt;
+		if (m_nSpinCnt == 90) {
+			m_nSpinCnt = 0;
+			m_bCollide = false;
+			if (xmf3pos.y >= 0.0f) {
+				xmf3pos.y = 0.0f;
+				ResetRULvec();
+			}
+			SetPlayOnce(false);
+			m_nJumpDir = 1;
+			ResetSpawnTime();
+		}
+		SetPosition(xmf3pos);
+		break;
+	default:
+		break;
+	}
+	
+	UpdateOOBB(GetPosition());
 }
 
 void CPlayer::Rotate(float x, float y, float z)
@@ -151,8 +219,12 @@ void CPlayer::Rotate(float x, float y, float z)
 		if (x != 0.0f)
 		{
 			m_fPitch += x;
-			if (m_fPitch > +89.0f) { x -= (m_fPitch - 89.0f); m_fPitch = +89.0f; }
-			if (m_fPitch < -89.0f) { x -= (m_fPitch + 89.0f); m_fPitch = -89.0f; }
+			if (m_fPitch > +36.0f) {
+				m_fPitch -= 360.0f;
+			}
+			if (m_fPitch < 0.0f) {
+				m_fPitch += 360.0f;
+			}
 		}
 		if (y != 0.0f)
 		{
@@ -167,6 +239,13 @@ void CPlayer::Rotate(float x, float y, float z)
 			if (m_fRoll < -20.0f) { z -= (m_fRoll + 20.0f); m_fRoll = -20.0f; }
 		}
 		m_pCamera->Rotate(x, y, z);
+		if (x != 0.0f)
+		{
+			XMMATRIX xmmtxRotate = XMMatrixRotationAxis(XMLoadFloat3(&m_xmf3Right), XMConvertToRadians(x));
+			m_xmf3Look = Vector3::TransformNormal(m_xmf3Look, xmmtxRotate);
+			m_xmf3Up = Vector3::TransformNormal(m_xmf3Up, xmmtxRotate);
+
+		}
 		if (y != 0.0f)
 		{
 			XMMATRIX xmmtxRotate = XMMatrixRotationAxis(XMLoadFloat3(&m_xmf3Up), XMConvertToRadians(y));
@@ -296,18 +375,33 @@ void CPlayer::OnPrepareRender()
 void CPlayer::Render(ID3D12GraphicsCommandList *pd3dCommandList, CCamera *pCamera)
 {
 	DWORD nCameraMode = (pCamera) ? pCamera->GetMode() : 0x00;
-	if (nCameraMode == THIRD_PERSON_CAMERA) 
-		CGameObject::Render(pd3dCommandList, pCamera);
+	if (nCameraMode == THIRD_PERSON_CAMERA) {
+		if (m_bInvincible && m_llSpawnTime != 0) {
+			long long time = ::GetTickCount64();
+			if ((time - m_llSpawnTime) % 300 >= 0 && (time - m_llSpawnTime) % 300 <= 150) {
+				CGameObject::Render(pd3dCommandList, pCamera);
+			}
+			if ((time - m_llSpawnTime) >= 3000) {
+				m_bInvincible = false;
+				m_llSpawnTime = 0;
+			}
+		}
+		else {
+			CGameObject::Render(pd3dCommandList, pCamera);
+		}
+	}
 }
 
 ///////////////////////////////////////////////////////////////////////////////////////////////////////////////////
 
-CAirplanePlayer::CAirplanePlayer(ID3D12Device *pd3dDevice, ID3D12GraphicsCommandList *pd3dCommandList, ID3D12RootSignature *pd3dGraphicsRootSignature)
+CCarPlayer::CCarPlayer(ID3D12Device *pd3dDevice, ID3D12GraphicsCommandList *pd3dCommandList, ID3D12RootSignature *pd3dGraphicsRootSignature)
 {
 #define SCALE_VALUE 8.5f
+//#define SCALE_VALUE 100.0f
 	m_pCamera = ChangeCamera(/*SPACESHIP_CAMERA*/THIRD_PERSON_CAMERA, 0.0f);
 
-	CGameObject *pGameObject = CGameObject::LoadGeometryFromFile(pd3dDevice, pd3dCommandList, pd3dGraphicsRootSignature, "Model/OldCar.bin");
+	CGameObject* pGameObject = CGameObject::LoadGeometryFromFile(pd3dDevice, pd3dCommandList, pd3dGraphicsRootSignature, "Model/car_1203_green.bin");
+	
 	pGameObject->SetOOBB(BoundingOrientedBox(pGameObject->GetCenter(), pGameObject->GetExtent(), XMFLOAT4(0.0f, 0.0f, 0.0f, 1.0f)));
 
 	pGameObject->SetScale(SCALE_VALUE, SCALE_VALUE, SCALE_VALUE);
@@ -321,45 +415,35 @@ CAirplanePlayer::CAirplanePlayer(ID3D12Device *pd3dDevice, ID3D12GraphicsCommand
 	CreateShaderVariables(pd3dDevice, pd3dCommandList);
 }
 
-CAirplanePlayer::~CAirplanePlayer()
+CCarPlayer::~CCarPlayer()
 {
 }
 
-void CAirplanePlayer::OnInitialize()
+void CCarPlayer::OnInitialize()
 {
-//	m_pMainRotorFrame = FindFrame("rotor");
-//	m_pTailRotorFrame = FindFrame("black_m_7");
-
-	m_pMainRotorFrame = FindFrame("Rotor");
-	m_pTailRotorFrame = FindFrame("Back_Rotor");
+	/*m_pMainRotorFrame = FindFrame("Rotor");
+	m_pTailRotorFrame = FindFrame("Back_Rotor");*/
+	m_pMainRotorFrame = nullptr;
+	m_pTailRotorFrame = nullptr;
 }
 
-void CAirplanePlayer::Animate(float fTimeElapsed, XMFLOAT4X4 *pxmf4x4Parent)
+void CCarPlayer::Animate(float fTimeElapsed, XMFLOAT4X4 *pxmf4x4Parent)
 {
-	if (m_pMainRotorFrame)
-	{
-		XMMATRIX xmmtxRotate = XMMatrixRotationY(XMConvertToRadians(360.0f * 2.0f) * fTimeElapsed);
-		m_pMainRotorFrame->m_xmf4x4Transform = Matrix4x4::Multiply(xmmtxRotate, m_pMainRotorFrame->m_xmf4x4Transform);
-	}
-	if (m_pTailRotorFrame)
-	{
-		XMMATRIX xmmtxRotate = XMMatrixRotationX(XMConvertToRadians(360.0f * 4.0f) * fTimeElapsed);
-		m_pTailRotorFrame->m_xmf4x4Transform = Matrix4x4::Multiply(xmmtxRotate, m_pTailRotorFrame->m_xmf4x4Transform);
-	}
 	if (m_bJumping)
 		PlayerJump();
-	
+
 	UpdateOOBB(GetPosition());
 	CPlayer::Animate(fTimeElapsed, pxmf4x4Parent);
 }
 
-void CAirplanePlayer::OnPrepareRender()
+void CCarPlayer::OnPrepareRender()
 {
 	CPlayer::OnPrepareRender();
 }
 
-CCamera *CAirplanePlayer::ChangeCamera(DWORD nNewCameraMode, float fTimeElapsed)
+CCamera *CCarPlayer::ChangeCamera(DWORD nNewCameraMode, float fTimeElapsed)
 {
+	XMFLOAT3 xmf3pos(0.0f, 0.0f, 1.0f);
 	DWORD nCurrentCameraMode = (m_pCamera) ? m_pCamera->GetMode() : 0x00;
 	if (nCurrentCameraMode == nNewCameraMode) return(m_pCamera);
 	switch (nNewCameraMode)
@@ -370,11 +454,12 @@ CCamera *CAirplanePlayer::ChangeCamera(DWORD nNewCameraMode, float fTimeElapsed)
 			SetMaxVelocityXZ(2.5f);
 			SetMaxVelocityY(40.0f);
 			m_pCamera = OnChangeCamera(FIRST_PERSON_CAMERA, nCurrentCameraMode);
-			m_pCamera->SetTimeLag(0.0f);
-			m_pCamera->SetOffset(XMFLOAT3(0.0f, 20.0f, 0.0f));
+			m_pCamera->SetTimeLag(1.0f);
+			m_pCamera->SetOffset(XMFLOAT3(0.0f, 10.0f, 0.0f));
 			m_pCamera->GenerateProjectionMatrix(1.01f, 5000.0f, ASPECT_RATIO, 60.0f);
 			m_pCamera->SetViewport(0, 0, FRAME_BUFFER_WIDTH, FRAME_BUFFER_HEIGHT, 0.0f, 1.0f);
 			m_pCamera->SetScissorRect(0, 0, FRAME_BUFFER_WIDTH, FRAME_BUFFER_HEIGHT);
+			m_pCamera->SetLookAt(xmf3pos);
 			break;
 		case SPACESHIP_CAMERA:
 			SetFriction(100.5f);
@@ -389,13 +474,13 @@ CCamera *CAirplanePlayer::ChangeCamera(DWORD nNewCameraMode, float fTimeElapsed)
 			m_pCamera->SetScissorRect(0, 0, FRAME_BUFFER_WIDTH, FRAME_BUFFER_HEIGHT);
 			break;
 		case THIRD_PERSON_CAMERA:
-			//SetFriction(20.5f);
+			SetFriction(20.5f);
 			SetFriction(10.5f);
 			SetGravity(XMFLOAT3(0.0f, 0.0f, 0.0f));
 			SetMaxVelocityXZ(25.5f);
 			SetMaxVelocityY(40.0f);
 			m_pCamera = OnChangeCamera(THIRD_PERSON_CAMERA, nCurrentCameraMode);
-			m_pCamera->SetTimeLag(0.25f);
+			m_pCamera->SetTimeLag(1.0f);
 			m_pCamera->SetOffset(XMFLOAT3(0.0f, 105.0f, -150.0f));
 			m_pCamera->GenerateProjectionMatrix(1.01f, 5000.0f, ASPECT_RATIO, 60.0f);
 			m_pCamera->SetViewport(0, 0, FRAME_BUFFER_WIDTH, FRAME_BUFFER_HEIGHT, 0.0f, 1.0f);

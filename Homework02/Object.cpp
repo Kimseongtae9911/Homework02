@@ -662,30 +662,6 @@ CGameObject *CGameObject::LoadGeometryFromFile(ID3D12Device *pd3dDevice, ID3D12G
 
 ////////////////////////////////////////////////////////////////////////////////////////////////////
 //
-CRotatingObject::CRotatingObject()
-{
-	m_xmf3RotationAxis = XMFLOAT3(0.0f, 1.0f, 0.0f);
-	m_fRotationSpeed = 15.0f;
-}
-
-CRotatingObject::~CRotatingObject()
-{
-}
-
-void CRotatingObject::Animate(float fTimeElapsed, XMFLOAT4X4 *pxmf4x4Parent)
-{
-	CGameObject::Rotate(&m_xmf3RotationAxis, m_fRotationSpeed * fTimeElapsed);
-
-	CGameObject::Animate(fTimeElapsed, pxmf4x4Parent);
-}
-
-void CRotatingObject::Render(ID3D12GraphicsCommandList *pd3dCommandList, CCamera *pCamera)
-{
-	CGameObject::Render(pd3dCommandList, pCamera);
-}
-
-////////////////////////////////////////////////////////////////////////////////////////////////////
-//
 CRevolvingObject::CRevolvingObject()
 {
 	m_xmf3RevolutionAxis = XMFLOAT3(1.0f, 0.0f, 0.0f);
@@ -705,78 +681,17 @@ void CRevolvingObject::Animate(float fTimeElapsed, XMFLOAT4X4 *pxmf4x4Parent)
 }
 
 ////////////////////////////////////////////////////////////////////////////////////////////////////
-//
-CHellicopterObject::CHellicopterObject()
-{
-}
-
-CHellicopterObject::~CHellicopterObject()
-{
-}
-
-void CHellicopterObject::OnInitialize()
-{
-}
-
-void CHellicopterObject::Animate(float fTimeElapsed, XMFLOAT4X4 *pxmf4x4Parent)
-{
-	if (m_pMainRotorFrame)
-	{
-		XMMATRIX xmmtxRotate = XMMatrixRotationY(XMConvertToRadians(360.0f * 2.0f) * fTimeElapsed);
-		m_pMainRotorFrame->m_xmf4x4Transform = Matrix4x4::Multiply(xmmtxRotate, m_pMainRotorFrame->m_xmf4x4Transform);
-	}
-	if (m_pTailRotorFrame)
-	{
-		XMMATRIX xmmtxRotate = XMMatrixRotationX(XMConvertToRadians(360.0f * 4.0f) * fTimeElapsed);
-		m_pTailRotorFrame->m_xmf4x4Transform = Matrix4x4::Multiply(xmmtxRotate, m_pTailRotorFrame->m_xmf4x4Transform);
-	}
-
-	CGameObject::Animate(fTimeElapsed, pxmf4x4Parent);
-}
-
-////////////////////////////////////////////////////////////////////////////////////////////////////
-//
-CApacheObject::CApacheObject()
-{
-}
-
-CApacheObject::~CApacheObject()
-{
-}
-
-void CApacheObject::OnInitialize()
-{
-	m_pMainRotorFrame = FindFrame("rotor");
-	m_pTailRotorFrame = FindFrame("black_m_7");
-}
-
-void CApacheObject::Animate(float fTimeElapsed, XMFLOAT4X4 *pxmf4x4Parent)
-{
-	if (m_pMainRotorFrame)
-	{
-		XMMATRIX xmmtxRotate = XMMatrixRotationY(XMConvertToRadians(360.0f * 2.0f) * fTimeElapsed);
-		m_pMainRotorFrame->m_xmf4x4Transform = Matrix4x4::Multiply(xmmtxRotate, m_pMainRotorFrame->m_xmf4x4Transform);
-	}
-	if (m_pTailRotorFrame)
-	{
-		XMMATRIX xmmtxRotate = XMMatrixRotationY(XMConvertToRadians(360.0f * 4.0f) * fTimeElapsed);
-		m_pTailRotorFrame->m_xmf4x4Transform = Matrix4x4::Multiply(xmmtxRotate, m_pTailRotorFrame->m_xmf4x4Transform);
-	}
-
-	UpdateOOBB(GetPosition());
-	CGameObject::Animate(fTimeElapsed, pxmf4x4Parent);
-}
 
 CMapObject::CMapObject()
 {
-	m_fVelocity = 0.5f;
+	m_fVelocity = 1.0f;
 }
 
 CMapObject::~CMapObject()
 {
 }
 
-#define MAX_SPEED 3.0f;
+#define MAX_SPEED 4.0f;
 #define GAIN_SPEED 0.0002f;
 void CMapObject::Animate(float fTimeElapsed, XMFLOAT4X4* pxmf4x4Parent)
 {
@@ -797,6 +712,7 @@ std::random_device rd;
 std::mt19937 engine(rd());
 std::uniform_real_distribution<> uidr(0.6f, 1.7f);
 std::uniform_real_distribution<> uidr2(800.f, 2000.f);
+std::uniform_real_distribution<> uidr3(1500.f, 2000.f);
 std::uniform_int_distribution<> uidi(0, 2);
 
 CCarObject::CCarObject()
@@ -818,7 +734,7 @@ CCarObject::CCarObject()
 	default:
 		break;
 	}
-	SetScale(7.0f, 7.0f, 7.0f);
+	SetScale(m_fScaleVal, m_fScaleVal, m_fScaleVal);
 }
 
 CCarObject::~CCarObject()
@@ -835,7 +751,7 @@ void CCarObject::Animate(float fTimeElapsed, XMFLOAT4X4* pxmf4x4Parent)
 
 	if (xmf3pos.z <= -170.0f) {
 		int pos = uidi(engine);
-		m_fVelocity = uidr(engine);
+		m_fVelocity = (float)uidr(engine);
 		switch (pos) {
 		case 0:
 			SetPosition(RIGHTROAD, 0.0f, 1340.0f);
@@ -854,4 +770,134 @@ void CCarObject::Animate(float fTimeElapsed, XMFLOAT4X4* pxmf4x4Parent)
 
 	UpdateOOBB(GetPosition());
 	CGameObject::Animate(fTimeElapsed, pxmf4x4Parent);
+}
+
+////////////////////////////////////////////////////////////////////////////////////////////////////
+
+std::uniform_int_distribution<> uidcoin(5, 10);
+CRotatingObject::CRotatingObject()
+{
+	m_bCollide = false;
+	m_fVelocity = 0.7f;
+	m_fScaleVal = 5.0f;
+	m_xmf3RotationAxis = XMFLOAT3(0.0f, 1.0f, 0.0f);
+	m_fRotationSpeed = 70.0f;
+	SetScale(m_fScaleVal, m_fScaleVal, m_fScaleVal);
+
+	int pos = uidi(engine);
+	switch (pos) {
+	case 0:
+		SetPosition(RIGHTROAD, 7.0f, (float)uidr3(engine));
+		break;
+	case 1:
+		SetPosition(MIDDLEROAD, 7.0f, (float)uidr3(engine));
+		break;
+	case 2:
+		SetPosition(LEFTROAD, 7.0f, (float)uidr3(engine));
+		break;
+	default:
+		break;
+	}
+
+	m_llSpawnTime = ::GetTickCount64();
+	m_nRespawnTime = uidcoin(engine);
+	UpdateOOBB(GetPosition());
+}
+
+CRotatingObject::~CRotatingObject()
+{
+}
+
+void CRotatingObject::Animate(float fTimeElapsed, XMFLOAT4X4* pxmf4x4Parent)
+{
+	if (m_bShow) {
+		m_fMaxSpeed = m_fVelocity + MAX_SPEED;
+		XMFLOAT3 xmf3pos = GetPosition();
+		xmf3pos.z -= m_fVelocity;
+		if (xmf3pos.z <= -100.0f) {
+			xmf3pos.z = 1300.0f;
+			m_bShow = false;
+			m_llSpawnTime = ::GetTickCount64();
+		}
+
+		if (m_fVelocity < m_fMaxSpeed)
+			m_fVelocity += GAIN_SPEED;
+
+		SetPosition(xmf3pos);
+
+		CGameObject::Rotate(&m_xmf3RotationAxis, m_fRotationSpeed * fTimeElapsed);
+
+		CGameObject::Animate(fTimeElapsed, pxmf4x4Parent);
+
+		xmf3pos.y -= 2.5f;
+		UpdateOOBB(xmf3pos);
+	}
+	else {
+		long long time = ::GetTickCount64();
+		if (time - m_llSpawnTime >= m_nRespawnTime * 1000) {
+			m_bShow = true;
+			m_nRespawnTime = uidcoin(engine);
+		}
+	}
+
+	if (m_bCollide) {
+		int pos = uidi(engine);
+		switch (pos) {
+		case 0:
+			SetPosition(RIGHTROAD, 7.0f, (float)uidr3(engine));
+			break;
+		case 1:
+			SetPosition(MIDDLEROAD, 7.0f, (float)uidr3(engine));
+			break;
+		case 2:
+			SetPosition(LEFTROAD, 7.0f, (float)uidr3(engine));
+			break;
+		default:
+			break;
+		}
+		m_bCollide = false;
+		UpdateOOBB(GetPosition());
+	}
+}
+
+
+void CRotatingObject::CheckTime()
+{
+}
+
+void CRotatingObject::Render(ID3D12GraphicsCommandList* pd3dCommandList, CCamera* pCamera)
+{
+	if(m_bShow)
+		CGameObject::Render(pd3dCommandList, pCamera);
+}
+
+void CItemObject::Render(ID3D12GraphicsCommandList* pd3dCommandList, CCamera* pCamera)
+{
+	if (m_bShow)
+		CGameObject::Render(pd3dCommandList, pCamera);
+}
+
+CShieldObject::CShieldObject()
+{
+	m_bCollide = false;
+	m_bShow = false;
+	
+	m_fScaleVal = 20.0f;
+	
+	Rotate(0.0f, -50.0f, 0.0f);
+	SetScale(m_fScaleVal, m_fScaleVal, m_fScaleVal);
+
+}
+
+CShieldObject::~CShieldObject()
+{
+}
+
+CLifeObject::CLifeObject()
+{
+	m_bShow = true;
+
+	Rotate(0.0f, -120.0f, 0.0f);
+	m_fScaleVal = 2.5f;
+	SetScale(m_fScaleVal, m_fScaleVal, m_fScaleVal);
 }

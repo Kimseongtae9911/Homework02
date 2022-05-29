@@ -12,13 +12,22 @@
 
 class CPlayer : public CGameObject
 {
+private:
+	static int m_nSpinCnt;
+
 protected:
 	DIR m_dDir;
 	DIR m_dPrevDir = DIR::MIDDLE;
 	bool m_bStop = true;
+
 	bool m_bJumping = false;
 	int m_nJumpDir = 1;
+	bool m_bPlayOnce = false;
 
+	bool m_bInvincible = false;
+	
+	int m_nCoinCnt = 0;
+	
 protected:
 	XMFLOAT3					m_xmf3Position;
 	XMFLOAT3					m_xmf3Right;
@@ -39,7 +48,10 @@ protected:
 	LPVOID						m_pCameraUpdatedContext;
 
 	CCamera						*m_pCamera = NULL;
-	
+
+private:
+	void ResetRULvec();
+
 public:
 	CPlayer();
 	virtual ~CPlayer();
@@ -50,6 +62,7 @@ public:
 	XMFLOAT3 GetRightVector() { return(m_xmf3Right); }
 	const bool GetStop() { return m_bStop; }
 	const DIR GetDir() { return m_dDir; }
+	bool GetInvincible() const { return m_bInvincible; }
 
 	void SetFriction(float fFriction) { m_fFriction = fFriction; }
 	void SetGravity(const XMFLOAT3& xmf3Gravity) { m_xmf3Gravity = xmf3Gravity; }
@@ -60,6 +73,8 @@ public:
 	void SetStop(bool bstop) { m_bStop = bstop; }
 	void SetDir(DIR dDir) { m_dDir = dDir; }
 	void SetJumping(bool bJump) { m_bJumping = bJump; }
+	void SetJumpDir(int nJumpDir) { m_nJumpDir = nJumpDir; }
+	void SetInvincible(bool bInvincible) { m_bInvincible = bInvincible; }
 
 	const XMFLOAT3& GetVelocity() const { return(m_xmf3Velocity); }
 	float GetYaw() const { return(m_fYaw); }
@@ -74,7 +89,10 @@ public:
 	void Move(ULONG dwDirection, float fDistance, bool bUpdateVelocity = false);
 	void Move(const XMFLOAT3& xmf3Shift, bool bVelocity = false);
 	void Move(float fxOffset = 0.0f, float fyOffset = 0.0f, float fzOffset = 0.0f);
+
 	void PlayerJump();
+	void PlayerCollideAnimate(int nAnimate);
+
 	void Rotate(float x, float y, float z);
 
 	void Update(float fTimeElapsed);
@@ -94,13 +112,21 @@ public:
 	virtual CCamera *ChangeCamera(DWORD nNewCameraMode, float fTimeElapsed) { return(NULL); }
 	virtual void OnPrepareRender();
 	virtual void Render(ID3D12GraphicsCommandList *pd3dCommandList, CCamera *pCamera = NULL);
+
+	int GetCoinCnt() const { return m_nCoinCnt; }
+	void AddCoinCnt() { ++m_nCoinCnt; }
+	void ResetCoinCnt() { m_nCoinCnt = 0; }
+	void SetCointCnt(int nCointCnt) { m_nCoinCnt = nCointCnt; }
+
+	void SetPlayOnce(bool bPlayOnce) { m_bPlayOnce = bPlayOnce; }
+	bool GetPlayOnce() const { return m_bPlayOnce; }
 };
 
-class CAirplanePlayer : public CPlayer
+class CCarPlayer : public CPlayer
 {
 public:
-	CAirplanePlayer(ID3D12Device *pd3dDevice, ID3D12GraphicsCommandList *pd3dCommandList, ID3D12RootSignature *pd3dGraphicsRootSignature);
-	virtual ~CAirplanePlayer();
+	CCarPlayer(ID3D12Device *pd3dDevice, ID3D12GraphicsCommandList *pd3dCommandList, ID3D12RootSignature *pd3dGraphicsRootSignature);
+	virtual ~CCarPlayer();
 
 	CGameObject*				m_pMainRotorFrame = NULL;
 	CGameObject*				m_pTailRotorFrame = NULL;
