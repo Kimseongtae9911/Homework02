@@ -690,7 +690,7 @@ void CRevolvingObject::Animate(float fTimeElapsed, XMFLOAT4X4 *pxmf4x4Parent)
 CMapObject::CMapObject()
 {
 	m_fVelocity = 5.0f;
-}
+} 
 
 CMapObject::~CMapObject()
 {
@@ -709,7 +709,7 @@ void CMapObject::Animate(float fTimeElapsed, XMFLOAT4X4* pxmf4x4Parent)
 	XMFLOAT3 xmf3pos = GetPosition();
 	xmf3pos.z -= m_fVelocity;
 	if (xmf3pos.z <= -100.0f)
-		xmf3pos.z = 1300.0f;
+		xmf3pos.z = 1100.0f;
 
 	if (m_fVelocity < m_fMaxSpeed)
 		m_fVelocity += GAIN_SPEED;

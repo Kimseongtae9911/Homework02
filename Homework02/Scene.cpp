@@ -275,11 +275,11 @@ bool CScene::OnProcessingKeyboardMessage(HWND hWnd, UINT nMessageID, WPARAM wPar
 	case WM_KEYDOWN:
 		switch (wParam)
 		{
-		case 'S': 
+		case 'A': 
 			if (m_pPlayer->GetCoinCnt() >= 5 && !m_ppItemObjects[m_nCoinObjects]->GetShow())
 				CreateShield();
 			break;
-		case 'A':
+		case 'S':
 			if (m_pPlayer->GetCoinCnt() >= 10)
 				PlayerInvincible();
 			break;
@@ -289,6 +289,7 @@ bool CScene::OnProcessingKeyboardMessage(HWND hWnd, UINT nMessageID, WPARAM wPar
 			break;
 		case VK_RETURN:
 			m_bGameStart = true;
+			m_pPlayer->SetPosition(XMFLOAT3(0.0f, 0.0f, 0.0f));
 			break;
 		case VK_SPACE:
 			if (!m_pPlayer->GetJumping())
@@ -313,7 +314,7 @@ void CScene::AnimateObjects(float fTimeElapsed)
 {
 	m_fElapsedTime = fTimeElapsed;
 
-	if (m_bGameStart && !m_pPlayer->GetCollide()) {
+	if (m_bGameStart && !m_pPlayer->GetCollide() && !m_bGameFinish) {
 		for (int i = 0; i < m_nGameObjects; ++i)
 			m_ppGameObjects[i]->Animate(fTimeElapsed, NULL);
 		for (int i = 0; i < m_nMapObjects; ++i)
@@ -324,6 +325,10 @@ void CScene::AnimateObjects(float fTimeElapsed)
 		XMFLOAT3 xmf3pos = m_pPlayer->GetPosition();
 		xmf3pos.y += 13.0f;
 		m_ppItemObjects[m_nCoinObjects]->SetPosition(xmf3pos.x, xmf3pos.y, m_ppItemObjects[m_nCoinObjects]->GetPosition().z);
+
+		m_fRunDistance += m_ppGameMap[0]->GetVelocity();
+		if (m_fRunDistance >= 25000.0f)
+			m_bGameFinish = true;
 	}
 
 	for (int i = m_nCoinObjects + 1; i < m_nItemObjects; ++i) {		// nCoinObjects + 1부터 목숨개수까지
@@ -359,11 +364,11 @@ void CScene::AnimateObjects(float fTimeElapsed)
 	}
 
 	// Player 충돌 애니메이션
-	if (m_pPlayer->GetCollide()) {
+	if (m_pPlayer->GetCollide() && !m_bGameFinish) {
 		m_pPlayer->PlayerJump();
 		CollideAnimate();			// 모든 오브젝트에 공통으로 적용되는 애니메이션
 	}
-	
+
 	if (m_bGameOver) {
 		m_pPlayer->SetPosition(XMFLOAT3(0.0f, -500.0f, 0.0f));
 		m_pPlayer->Rotate(0.0f, 20.0f, 0.0f);
@@ -374,8 +379,28 @@ void CScene::AnimateObjects(float fTimeElapsed)
 		}
 	}
 
+	if (m_bGameFinish) {
+		XMFLOAT3 xmf3pos = m_pPlayer->GetPosition();
+		if (m_pPlayer->GetPosition().z < 900.0f) {
+			xmf3pos.z += 4.0f;
+			m_pPlayer->SetPosition(xmf3pos);
+			m_llResetTime = ::GetTickCount64();
+		}
+		else {
+			if (::GetTickCount64() % 500 < 250)
+				m_xmf4GlobalAmbient = XMFLOAT4(0.4f, 0.4f, 0.1f, 1.0f);
+			else
+				m_xmf4GlobalAmbient = XMFLOAT4(0.1f, 0.4f, 0.4f, 1.0f);
+		}
+		if (::GetTickCount64() - m_llResetTime > 3000)
+			Reset();
+
+	}
+
 	LightAnimate();
-	CheckCollisionPlayerCar();		// 충돌처리
+
+	if (!m_bGameFinish)
+		CheckCollisionPlayerCar();		// 충돌처리
 }
 
 extern random_device rd;
@@ -477,6 +502,8 @@ void CScene::Reset()
 	//Player Reset
 	m_pPlayer->Reset();
 	m_bGameStart = false;
+	m_bGameFinish = false;
+	m_fRunDistance = 0.0f;
 
 	//Light Reset
 	m_xmf4GlobalAmbient = XMFLOAT4(0.3f, 0.3f, 0.3f, 1.0f);
@@ -558,14 +585,6 @@ void CScene::Render(ID3D12GraphicsCommandList *pd3dCommandList, CCamera *pCamera
 	D3D12_GPU_VIRTUAL_ADDRESS d3dcbLightsGpuVirtualAddress = m_pd3dcbLights->GetGPUVirtualAddress();
 	pd3dCommandList->SetGraphicsRootConstantBufferView(2, d3dcbLightsGpuVirtualAddress); //Lights
 
-	for (int i = 0; i < m_nGameObjects; ++i)
-	{
-		if (m_ppGameObjects[i])
-		{
-			m_ppGameObjects[i]->UpdateTransform(NULL);
-			m_ppGameObjects[i]->Render(pd3dCommandList, pCamera);
-		}
-	}
 
 	for (int i = 0; i < m_nMapObjects; ++i)
 	{
@@ -576,10 +595,21 @@ void CScene::Render(ID3D12GraphicsCommandList *pd3dCommandList, CCamera *pCamera
 		}
 	}
 
-	for (int i = 0; i < m_nItemObjects; ++i) {
-		if (m_ppItemObjects[i] && m_ppItemObjects[i]->GetShow()) {
-			m_ppItemObjects[i]->UpdateTransform(NULL);
-			m_ppItemObjects[i]->Render(pd3dCommandList, pCamera);
+	if (!m_bGameFinish) {
+		for (int i = 0; i < m_nGameObjects; ++i)
+		{
+			if (m_ppGameObjects[i])
+			{
+				m_ppGameObjects[i]->UpdateTransform(NULL);
+				m_ppGameObjects[i]->Render(pd3dCommandList, pCamera);
+			}
+		}
+
+		for (int i = 0; i < m_nItemObjects; ++i) {
+			if (m_ppItemObjects[i] && m_ppItemObjects[i]->GetShow()) {
+				m_ppItemObjects[i]->UpdateTransform(NULL);
+				m_ppItemObjects[i]->Render(pd3dCommandList, pCamera);
+			}
 		}
 	}
 }

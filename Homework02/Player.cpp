@@ -186,12 +186,10 @@ void CPlayer::PlayerCollideAnimate(int nAnimate)
 			m_nJumpDir = 1;
 			ResetRULvec();
 			ResetSpawnTime();
-			m_pCamera->SetPosition(XMFLOAT3(m_xmf3CameraPos.x, m_xmf3CameraPos.y, m_xmf3CameraPos.z));
 		}
 		break;
 	case 2: 
 		xmf3pos.y += JUMP_SPEED * m_nJumpDir;
-		m_pCamera->Move(XMFLOAT3(1.0f, 0.0f, 0.0f));
 		if (xmf3pos.y >= 45.0f) {
 			m_nJumpDir *= -1;
 		}
@@ -208,7 +206,6 @@ void CPlayer::PlayerCollideAnimate(int nAnimate)
 			m_nJumpDir = 1;
 			ResetSpawnTime();
 			m_bJumping = false;
-			m_pCamera->SetPosition(XMFLOAT3(m_xmf3CameraPos.x, m_xmf3CameraPos.y + 14, m_xmf3CameraPos.z));
 		}
 		SetPosition(xmf3pos);
 		break;
